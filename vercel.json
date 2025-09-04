@@ -4,6 +4,11 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
     }
   ],
   "routes": [
@@ -12,24 +17,8 @@
       "dest": "api/index.py"
     },
     {
-      "src": "/s/(.*)",
-      "dest": "api/index.py"
-    },
-    {
-      "src": "/p/(.*)",
-      "dest": "api/index.py"
-    },
-    {
-      "src": "/pixel/(.*)",
-      "dest": "api/index.py"
-    },
-    {
-      "src": "/t/(.*)",
-      "dest": "api/index.py"
-    },
-    {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "/index.html"
     }
   ],
   "env": {
@@ -39,5 +28,4 @@
     "SHORTIO_DOMAIN": "Secure-links.short.gy"
   }
 }
-
 
