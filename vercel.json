@@ -1,0 +1,43 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/s/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/p/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/pixel/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/t/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
+    }
+  ],
+  "env": {
+    "SECRET_KEY": "ej5B3Amppi4gjpbC65te6rJuvJzgVCWW_xfB-ZLR1TE",
+    "DATABASE_URL": "postgresql://neondb_owner:npg_7CcKbPRm2GDw@ep-odd-thunder-ade4ip4a-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require",
+    "SHORTIO_API_KEY": "sk_DbGGlUHPN7Z9VotL",
+    "SHORTIO_DOMAIN": "Secure-links.short.gy"
+  }
+}
+
+
