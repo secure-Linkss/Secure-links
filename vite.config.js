@@ -13,6 +13,8 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
+    hmr: { clientPort: 443 },
+    allowedHosts: ['5174-ii8k0qj2i8lecuw4xepw4-f1c1adb0.manusvm.computer'],
     port: 5173,
     proxy: {
       '/api': {
