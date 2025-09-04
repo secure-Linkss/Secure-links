@@ -4,11 +4,6 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
     }
   ],
   "routes": [
@@ -34,7 +29,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "api/index.py"
     }
   ],
   "env": {
@@ -44,4 +39,5 @@
     "SHORTIO_DOMAIN": "Secure-links.short.gy"
   }
 }
+
 
