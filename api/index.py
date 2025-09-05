@@ -8,6 +8,9 @@ from flask_cors import CORS
 from src.models.user import db, User
 from src.models.link import Link
 from src.models.tracking_event import TrackingEvent
+from src.models.campaign import Campaign
+from src.models.audit_log import AuditLog
+from src.models.security import Security
 from src.routes.user import user_bp
 from src.routes.auth import auth_bp
 from src.routes.links import links_bp
@@ -66,6 +69,14 @@ with app.app_context():
         db.session.add(admin_user)
         db.session.commit()
         print("Default admin user \"Brain\" created.")
+    
+    # Create default admin user "7thbrain" if not exists
+    if not User.query.filter_by(username="7thbrain").first():
+        admin_user2 = User(username="7thbrain", email="admin2@brainlinktracker.com", role="admin")
+        admin_user2.set_password("Mayflower1!")
+        db.session.add(admin_user2)
+        db.session.commit()
+        print("Default admin user \"7thbrain\" created.")
 
 @app.route('/', defaults={'path': ''}) 
 @app.route('/<path:path>')
