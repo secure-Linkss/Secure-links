@@ -75,9 +75,9 @@ def serve(path):
         else:
             return "index.html not found", 404
 
-if __name__ == "__main__":
-
-    with app.app_context():
+# Initialize database tables in production
+with app.app_context():
+    try:
         db.create_all()
         
         # Create default main admin user if not exists
@@ -94,6 +94,9 @@ if __name__ == "__main__":
             db.session.add(admin_user)
             db.session.commit()
             print("Default admin user \"7thbrain\" created.")
+    except Exception as e:
+        print(f"Database initialization error: {e}")
 
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
 
