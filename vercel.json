@@ -6,7 +6,7 @@
       "use": "@vercel/python"
     },
     {
-      "src": "dist/**",
+      "src": "src/static/**",
       "use": "@vercel/static"
     }
   ],
@@ -33,11 +33,11 @@
     },
     {
       "src": "/assets/(.*)",
-      "dest": "dist/assets/$1"
+      "dest": "src/static/assets/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "dist/index.html"
+      "dest": "src/static/index.html"
     }
   ],
   "env": {
