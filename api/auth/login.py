@@ -3,10 +3,9 @@ import os
 import json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 from src.models import db
 from src.models.user import User
-import re
 
 # Create a minimal Flask app for this endpoint
 app = Flask(__name__)
@@ -27,26 +26,39 @@ def sanitize_input(text):
         return ''
     return text.strip()
 
-def handler(request):
+# This is the main handler function for Vercel
+def handler(event, context):
     with app.app_context():
         try:
             # Initialize database if needed
             db.create_all()
             
-            # Parse request data
-            if hasattr(request, 'get_json'):
-                data = request.get_json()
+            # Create default users if they don't exist
+            if not User.query.filter_by(username="Brain").first():
+                admin_user = User(username="Brain", email="admin@brainlinktracker.com", role="main_admin")
+                admin_user.set_password("Mayflower1!!")
+                db.session.add(admin_user)
+                db.session.commit()
+            
+            # Parse request data from Vercel event
+            if 'body' in event:
+                body = event['body']
+                if isinstance(body, str):
+                    data = json.loads(body) if body else {}
+                else:
+                    data = body
             else:
-                # For Vercel serverless function
-                body = getattr(request, 'body', '{}')
-                if isinstance(body, bytes):
-                    body = body.decode('utf-8')
-                data = json.loads(body) if body else {}
+                data = {}
             
             if not data:
                 return {
                     'statusCode': 400,
-                    'headers': {'Content-Type': 'application/json'},
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                        'Access-Control-Allow-Headers': 'Content-Type'
+                    },
                     'body': json.dumps({'success': False, 'error': 'No data provided'})
                 }
             
@@ -56,7 +68,12 @@ def handler(request):
             if not username or not password:
                 return {
                     'statusCode': 400,
-                    'headers': {'Content-Type': 'application/json'},
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                        'Access-Control-Allow-Headers': 'Content-Type'
+                    },
                     'body': json.dumps({'success': False, 'error': 'Username and password are required'})
                 }
             
@@ -68,24 +85,40 @@ def handler(request):
             if user and user.check_password(password):
                 return {
                     'statusCode': 200,
-                    'headers': {'Content-Type': 'application/json'},
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                        'Access-Control-Allow-Headers': 'Content-Type'
+                    },
                     'body': json.dumps({
                         'success': True,
                         'message': 'Login successful',
-                        'user': user.to_dict()
+                        'user': user.to_dict(),
+                        'token': 'dummy-token'
                     })
                 }
             else:
                 return {
                     'statusCode': 401,
-                    'headers': {'Content-Type': 'application/json'},
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                        'Access-Control-Allow-Headers': 'Content-Type'
+                    },
                     'body': json.dumps({'success': False, 'error': 'Invalid credentials'})
                 }
                 
         except Exception as e:
             return {
                 'statusCode': 500,
-                'headers': {'Content-Type': 'application/json'},
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type'
+                },
                 'body': json.dumps({'success': False, 'error': f'Server error: {str(e)}'})
             }
 
