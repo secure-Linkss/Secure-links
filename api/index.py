@@ -1,12 +1,9 @@
-from flask import Flask
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "Hello World from Flask!"
+from src.main import app
 
 if __name__ == "__main__":
-    app.run(debug=True)
-
+    app.run(host='0.0.0.0', port=5000, debug=True)
 

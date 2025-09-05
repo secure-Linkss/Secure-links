@@ -113,6 +113,7 @@ const LinkShortener = () => {
     setFormError('')
 
     try {
+      console.log("Form data:", formData);
       const response = await fetch('/api/links', {
         method: 'POST',
         headers: {

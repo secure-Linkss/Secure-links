@@ -1,4 +1,4 @@
-from .user import db
+from src.models import db
 from datetime import datetime
 
 class TrackingEvent(db.Model):

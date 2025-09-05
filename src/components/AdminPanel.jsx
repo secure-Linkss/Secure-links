@@ -1,641 +1,497 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
-import './AdminPanel.css';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import {
+  Users,
+  Target,
+  Shield,
+  Settings,
+  Eye,
+  Ban,
+  CheckCircle,
+  Clock,
+  MoreVertical,
+  Search,
+  Filter,
+  Download,
+  Plus,
+  User,
+  Calendar,
+  Mail,
+  Crown,
+  UserCheck,
+  UserX,
+  RefreshCw
+} from 'lucide-react';
 
 const AdminPanel = () => {
-    const [activeTab, setActiveTab] = useState('dashboard');
-    const [dashboardStats, setDashboardStats] = useState(null);
-    const [usersData, setUsersData] = useState([]);
-    const [campaignsData, setCampaignsData] = useState([]);
-    const [subscriptionsData, setSubscriptionsData] = useState([]);
-    const [ticketsData, setTicketsData] = useState([]);
-    const [securityData, setSecurityData] = useState(null);
-    const [auditLogs, setAuditLogs] = useState([]);
-    const [adminSettings, setAdminSettings] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [isMobile, setIsMobile] = useState(false);
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [selectedCampaign, setSelectedCampaign] = useState(null);
-    const [showUserModal, setShowUserModal] = useState(false);
-    const [showCampaignModal, setShowCampaignModal] = useState(false);
-    const [userFilters, setUserFilters] = useState({ status: 'all', role: 'all', search: '' });
-    const [campaignFilters, setCampaignFilters] = useState({ status: 'all', search: '' });
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-        
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
-    useEffect(() => {
-        fetchData();
-    }, [activeTab]);
-
-    const fetchData = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            switch (activeTab) {
-                case 'dashboard':
-                    const dashResponse = await axios.get('/api/admin/dashboard');
-                    setDashboardStats(dashResponse.data);
-                    break;
-                case 'users':
-                    const usersResponse = await axios.get('/api/admin/users', {
-                        params: userFilters
-                    });
-                    setUsersData(usersResponse.data.users || []);
-                    break;
-                case 'campaigns':
-                    const campaignsResponse = await axios.get('/api/admin/campaigns', {
-                        params: campaignFilters
-                    });
-                    setCampaignsData(campaignsResponse.data.campaigns || []);
-                    break;
-                case 'security':
-                    const securityResponse = await axios.get('/api/admin/security');
-                    const threatsResponse = await axios.get('/api/admin/security/threats');
-                    setSecurityData({
-                        ...securityResponse.data,
-                        threats: threatsResponse.data.threats || [],
-                        ip_statistics: threatsResponse.data.ip_statistics || []
-                    });
-                    break;
-                case 'subscriptions':
-                    const subsResponse = await axios.get('/api/admin/subscriptions');
-                    setSubscriptionsData(subsResponse.data.subscriptions || []);
-                    break;
-                case 'tickets':
-                    const ticketsResponse = await axios.get('/api/admin/tickets');
-                    setTicketsData(ticketsResponse.data || []);
-                    break;
-                case 'audit':
-                    const auditResponse = await axios.get('/api/admin/audit-logs');
-                    setAuditLogs(auditResponse.data.logs || []);
-                    break;
-                case 'settings':
-                    const settingsResponse = await axios.get('/api/admin/settings');
-                    setAdminSettings(settingsResponse.data.settings || []);
-                    break;
-            }
-        } catch (err) {
-            setError('Failed to load data for ' + activeTab);
-            console.error(err);
-        } finally {
-            setLoading(false);
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data || []);
+        setLastUpdated(new Date());
+      } else {
+        console.error('Failed to fetch users');
+        setUsers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUserAction = async (userId, action) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/${action}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+      });
+      
+      if (response.ok) {
+        fetchUsers(); // Refresh the user list
+      } else {
+        console.error(`Failed to ${action} user`);
+      }
+    } catch (error) {
+      console.error(`Error performing ${action} on user:`, error);
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    
+    return matchesSearch && matchesStatus && matchesRole;
+  });
+
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      active: { color: 'bg-green-600', text: 'Active', icon: CheckCircle },
+      pending: { color: 'bg-yellow-600', text: 'Pending', icon: Clock },
+      suspended: { color: 'bg-red-600', text: 'Suspended', icon: Ban },
+      expired: { color: 'bg-gray-600', text: 'Expired', icon: UserX }
     };
-
-    const tabs = [
-        { id: 'dashboard', label: 'Dashboard Overview', icon: '📊' },
-        { id: 'users', label: 'User Management', icon: '👥' },
-        { id: 'campaigns', label: 'Campaign Management', icon: '🎯' },
-        { id: 'security', label: 'Security & Threats', icon: '🛡️' },
-        { id: 'subscriptions', label: 'Subscriptions', icon: '💳' },
-        { id: 'tickets', label: 'Support & Ticketing', icon: '🎫' },
-        { id: 'audit', label: 'Audit Logs & Reports', icon: '📋' },
-        { id: 'settings', label: 'Settings', icon: '⚙️' }
-    ];
-
-    const handleUserAction = async (action, userId, data = {}) => {
-        try {
-            let response;
-            switch (action) {
-                case 'approve':
-                    response = await axios.post(`/api/admin/users/${userId}/approve`, data);
-                    break;
-                case 'suspend':
-                    response = await axios.post(`/api/admin/users/${userId}/suspend`);
-                    break;
-                case 'activate':
-                    response = await axios.post(`/api/admin/users/${userId}/activate`);
-                    break;
-                case 'delete':
-                    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-                        response = await axios.delete(`/api/admin/users/${userId}/delete`);
-                    }
-                    break;
-                case 'reset-password':
-                    response = await axios.post(`/api/admin/users/${userId}/reset-password`, data);
-                    break;
-            }
-            
-            if (response) {
-                alert(response.data.message);
-                fetchData(); // Refresh data
-            }
-        } catch (error) {
-            alert('Error: ' + (error.response?.data?.error || error.message));
-        }
-    };
-
-    const handleCampaignAction = async (action, campaignId) => {
-        try {
-            let response;
-            switch (action) {
-                case 'suspend':
-                    response = await axios.post(`/api/admin/campaigns/${campaignId}/suspend`);
-                    break;
-                case 'delete':
-                    if (window.confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
-                        response = await axios.delete(`/api/admin/campaigns/${campaignId}/delete`);
-                    }
-                    break;
-            }
-            
-            if (response) {
-                alert(response.data.message);
-                fetchData(); // Refresh data
-            }
-        } catch (error) {
-            alert('Error: ' + (error.response?.data?.error || error.message));
-        }
-    };
-
-    const handleSubscriptionAction = async (action, subscriptionId, data = {}) => {
-        try {
-            let response;
-            switch (action) {
-                case 'approve':
-                    response = await axios.post(`/api/admin/subscriptions/${subscriptionId}/approve`, data);
-                    break;
-                case 'reject':
-                    response = await axios.post(`/api/admin/subscriptions/${subscriptionId}/reject`, data);
-                    break;
-            }
-            
-            if (response) {
-                alert(response.data.message);
-                fetchData(); // Refresh data
-            }
-        } catch (error) {
-            alert('Error: ' + (error.response?.data?.error || error.message));
-        }
-    };
-
-    const renderTabNavigation = () => (
-        <div className="admin-tabs">
-            {isMobile ? (
-                <select 
-                    value={activeTab} 
-                    onChange={(e) => setActiveTab(e.target.value)}
-                    className="mobile-tab-select"
-                >
-                    {tabs.map(tab => (
-                        <option key={tab.id} value={tab.id}>
-                            {tab.icon} {tab.label}
-                        </option>
-                    ))}
-                </select>
-            ) : (
-                <div className="tab-buttons">
-                    {tabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-                            onClick={() => setActiveTab(tab.id)}
-                        >
-                            <span className="tab-icon">{tab.icon}</span>
-                            <span className="tab-label">{tab.label}</span>
-                        </button>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-
-    const renderDashboard = () => {
-        if (!dashboardStats) return <div className="loading">Loading dashboard...</div>;
-
-        const userGrowthData = {
-            labels: dashboardStats.user_growth?.map(d => d.date) || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [
-                {
-                    label: 'New Users',
-                    data: dashboardStats.user_growth?.map(d => d.count) || [12, 19, 15, 25, 22, 30, 28],
-                    borderColor: 'rgba(37, 117, 252, 1)',
-                    backgroundColor: 'rgba(37, 117, 252, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }
-            ]
-        };
-
-        const revenueData = {
-            labels: dashboardStats.revenue_breakdown?.map(r => r.plan) || ['Free', 'Pro'],
-            datasets: [
-                {
-                    data: dashboardStats.revenue_breakdown?.map(r => r.amount) || [0, 15000],
-                    backgroundColor: [
-                        'rgba(106, 17, 203, 0.8)',
-                        'rgba(37, 117, 252, 0.8)'
-                    ]
-                }
-            ]
-        };
-
-        return (
-            <div className="dashboard-content">
-                <div className="dashboard-header">
-                    <h2>Admin Dashboard</h2>
-                    <p>Real-time overview of your platform</p>
-                </div>
-
-                {/* Key Metrics */}
-                <div className="metrics-grid">
-                    <div className="metric-card">
-                        <div className="metric-icon">👥</div>
-                        <div className="metric-value">{dashboardStats.total_users || 0}</div>
-                        <div className="metric-label">Total Users</div>
-                        <div className="metric-change positive">+{dashboardStats.user_growth_percentage || 15}%</div>
-                    </div>
-                    <div className="metric-card">
-                        <div className="metric-icon">🔗</div>
-                        <div className="metric-value">{dashboardStats.total_links || 0}</div>
-                        <div className="metric-label">Total Links</div>
-                        <div className="metric-change positive">+{dashboardStats.link_growth_percentage || 8}%</div>
-                    </div>
-                    <div className="metric-card">
-                        <div className="metric-icon">📊</div>
-                        <div className="metric-value">{dashboardStats.total_clicks || 0}</div>
-                        <div className="metric-label">Total Clicks</div>
-                        <div className="metric-change positive">+{dashboardStats.click_growth_percentage || 23}%</div>
-                    </div>
-                    <div className="metric-card">
-                        <div className="metric-icon">💰</div>
-                        <div className="metric-value">${dashboardStats.total_revenue || 0}</div>
-                        <div className="metric-label">Monthly Revenue</div>
-                        <div className="metric-change positive">+{dashboardStats.revenue_growth_percentage || 12}%</div>
-                    </div>
-                    <div className="metric-card">
-                        <div className="metric-icon">🎫</div>
-                        <div className="metric-value">{dashboardStats.open_tickets || 0}</div>
-                        <div className="metric-label">Open Tickets</div>
-                        <div className="metric-change negative">-{dashboardStats.ticket_reduction_percentage || 5}%</div>
-                    </div>
-                    <div className="metric-card">
-                        <div className="metric-icon">🛡️</div>
-                        <div className="metric-value">{dashboardStats.threats_blocked || 0}</div>
-                        <div className="metric-label">Threats Blocked</div>
-                        <div className="metric-change positive">+{dashboardStats.security_improvement || 18}%</div>
-                    </div>
-                </div>
-
-                {/* Charts Grid */}
-                <div className="charts-grid">
-                    <div className="chart-container large-chart">
-                        <h3>User Growth Trend</h3>
-                        <div className="chart-wrapper">
-                            <Line data={userGrowthData} options={{
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
-                                scales: {
-                                    x: { 
-                                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                                        ticks: { color: '#94a3b8' }
-                                    },
-                                    y: { 
-                                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                                        ticks: { color: '#94a3b8' }
-                                    }
-                                }
-                            }} />
-                        </div>
-                    </div>
-                    <div className="chart-container">
-                        <h3>Revenue Distribution</h3>
-                        <div className="chart-wrapper">
-                            <Doughnut data={revenueData} options={{
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        position: 'bottom',
-                                        labels: { color: '#94a3b8' }
-                                    }
-                                }
-                            }} />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    const renderUserManagement = () => (
-        <div className="user-management-content">
-            <div className="section-header">
-                <h2>User Management</h2>
-                <button className="add-user-btn">Add New User</button>
-            </div>
-            
-            <div className="users-table-container">
-                <table className="users-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Email</th>
-                            <th>Plan</th>
-                            <th>Status</th>
-                            <th>Joined</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {usersData.map(user => (
-                            <tr key={user.id}>
-                                <td>
-                                    <div className="user-info">
-                                        <div className="user-avatar">{user.username?.charAt(0)?.toUpperCase()}</div>
-                                        <span>{user.username}</span>
-                                    </div>
-                                </td>
-                                <td>{user.email}</td>
-                                <td>
-                                    <span className={`plan-badge ${user.plan?.toLowerCase()}`}>
-                                        {user.plan || 'Free'}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span className={`status-badge ${user.status?.toLowerCase()}`}>
-                                        {user.status || 'Active'}
-                                    </span>
-                                </td>
-                                <td>{new Date(user.created_at).toLocaleDateString()}</td>
-                                <td>
-                                    <div className="action-buttons">
-                                        <button className="edit-btn">Edit</button>
-                                        <button className="delete-btn">Delete</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-
-    const renderCampaignManagement = () => (
-        <div className="campaign-management-content">
-            <div className="section-header">
-                <h2>Campaign Management</h2>
-                <button className="add-campaign-btn">Create Campaign</button>
-            </div>
-            
-            <div className="campaigns-table-container">
-                <table className="campaigns-table">
-                    <thead>
-                        <tr>
-                            <th>Campaign Name</th>
-                            <th>Owner</th>
-                            <th>Status</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {campaignsData.map(campaign => (
-                            <tr key={campaign.id}>
-                                <td>{campaign.name}</td>
-                                <td>{campaign.owner}</td>
-                                <td>
-                                    <span className={`status-badge ${campaign.status?.toLowerCase()}`}>
-                                        {campaign.status || 'Active'}
-                                    </span>
-                                </td>
-                                <td>{new Date(campaign.start_date).toLocaleDateString()}</td>
-                                <td>{new Date(campaign.end_date).toLocaleDateString()}</td>
-                                <td>
-                                    <div className="action-buttons">
-                                        <button className="edit-btn">Edit</button>
-                                        <button className="delete-btn">Delete</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-
-    const renderSecurity = () => {
-        if (!securityData) return <div className="loading">Loading security data...</div>;
-
-        return (
-            <div className="security-content">
-                <div className="section-header">
-                    <h2>Security & Threats</h2>
-                </div>
-
-                <div className="security-overview">
-                    <div className="security-card">
-                        <div className="security-icon">🛡️</div>
-                        <div className="security-value">{securityData.total_threats || 0}</div>
-                        <div className="security-label">Total Threats Detected</div>
-                    </div>
-                    <div className="security-card">
-                        <div className="security-icon">🚫</div>
-                        <div className="security-value">{securityData.blocked_ips || 0}</div>
-                        <div className="security-label">IPs Blocked</div>
-                    </div>
-                    <div className="security-card">
-                        <div className="security-icon">✅</div>
-                        <div className="security-value">{securityData.whitelisted_ips || 0}</div>
-                        <div className="security-label">IPs Whitelisted</div>
-                    </div>
-                </div>
-
-                <div className="security-section">
-                    <h3>Threats Log</h3>
-                    <div className="threats-table-container">
-                        <table className="threats-table">
-                            <thead>
-                                <tr>
-                                    <th>IP Address</th>
-                                    <th>Reason</th>
-                                    <th>Timestamp</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {securityData.threats.map(threat => (
-                                    <tr key={threat.id}>
-                                        <td>{threat.ip_address}</td>
-                                        <td>{threat.reason}</td>
-                                        <td>{new Date(threat.timestamp).toLocaleString()}</td>
-                                        <td>
-                                            <div className="action-buttons">
-                                                <button className="block-btn">Block</button>
-                                                <button className="whitelist-btn">Whitelist</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    const renderSubscriptions = () => (
-        <div className="subscriptions-content">
-            <div className="section-header">
-                <h2>Subscription Management</h2>
-            </div>
-            
-            <div className="subscriptions-table-container">
-                <table className="subscriptions-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Plan</th>
-                            <th>Status</th>
-                            <th>Transaction ID</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {subscriptionsData.map(sub => (
-                            <tr key={sub.id}>
-                                <td>{sub.user.username}</td>
-                                <td>{sub.plan}</td>
-                                <td>
-                                    <span className={`status-badge ${sub.status?.toLowerCase()}`}>
-                                        {sub.status}
-                                    </span>
-                                </td>
-                                <td>{sub.transaction_id}</td>
-                                <td>{new Date(sub.start_date).toLocaleDateString()}</td>
-                                <td>{new Date(sub.end_date).toLocaleDateString()}</td>
-                                <td>
-                                    <div className="action-buttons">
-                                        <button className="approve-btn">Approve</button>
-                                        <button className="reject-btn">Reject</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-
-    const renderTickets = () => (
-        <div className="tickets-content">
-            <div className="section-header">
-                <h2>Support & Ticketing</h2>
-            </div>
-            
-            <div className="tickets-grid">
-                {ticketsData.map(ticket => (
-                    <div key={ticket.id} className="ticket-card">
-                        <div className="ticket-header">
-                            <span className="ticket-id">{ticket.ticket_id}</span>
-                            <span className={`ticket-status ${ticket.status?.toLowerCase()}`}>{ticket.status}</span>
-                        </div>
-                        <h3 className="ticket-subject">{ticket.subject}</h3>
-                        <p className="ticket-user">From: {ticket.user.username}</p>
-                        <p className="ticket-date">Opened: {new Date(ticket.created_at).toLocaleString()}</p>
-                        <div className="ticket-actions">
-                            <button className="reply-btn">Reply</button>
-                            <button className="resolve-btn">Resolve</button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-
-    const renderAuditLogs = () => (
-        <div className="audit-logs-content">
-            <div className="section-header">
-                <h2>Audit Logs</h2>
-            </div>
-            
-            <div className="audit-table-container">
-                <table className="audit-table">
-                    <thead>
-                        <tr>
-                            <th>Admin</th>
-                            <th>Action</th>
-                            <th>Target</th>
-                            <th>Timestamp</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {auditLogs.map(log => (
-                            <tr key={log.id}>
-                                <td>{log.admin.username}</td>
-                                <td>{log.action}</td>
-                                <td>{log.target_type} - {log.target_id}</td>
-                                <td>{new Date(log.timestamp).toLocaleString()}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-
-    const renderSettings = () => (
-        <div className="settings-content">
-            <div className="section-header">
-                <h2>Admin Settings</h2>
-                <button className="save-settings-btn">Save Settings</button>
-            </div>
-            
-            <div className="settings-sections">
-                {adminSettings.map(setting => (
-                    <div key={setting.id} className="setting-group">
-                        <label>{setting.description}</label>
-                        <input type="text" defaultValue={setting.value} />
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-
+    
+    const config = statusConfig[status] || statusConfig.pending;
+    const Icon = config.icon;
     return (
-        <div className="admin-panel">
-            <div className="admin-header">
-                <h1>Brain Link Tracker - Admin Panel</h1>
-                <p>Enterprise-grade SaaS administration</p>
-            </div>
-            
-            {renderTabNavigation()}
-            
-            <div className="admin-content">
-                {activeTab === 'dashboard' && renderDashboard()}
-                {activeTab === 'users' && renderUserManagement()}
-                {activeTab === 'campaigns' && renderCampaignManagement()}
-                {activeTab === 'security' && renderSecurity()}
-                {activeTab === 'subscriptions' && renderSubscriptions()}
-                {activeTab === 'tickets' && renderTickets()}
-                {activeTab === 'audit' && renderAuditLogs()}
-                {activeTab === 'settings' && renderSettings()}
-            </div>
-        </div>
+      <Badge className={`${config.color} text-white flex items-center gap-1`}>
+        <Icon className="h-3 w-3" />
+        {config.text}
+      </Badge>
     );
+  };
+
+  const getRoleBadge = (role) => {
+    const roleConfig = {
+      main_admin: { color: 'bg-purple-600', text: 'Main Admin', icon: Crown },
+      admin: { color: 'bg-blue-600', text: 'Admin', icon: UserCheck },
+      member: { color: 'bg-gray-600', text: 'Member', icon: User }
+    };
+    
+    const config = roleConfig[role] || roleConfig.member;
+    const Icon = config.icon;
+    return (
+      <Badge className={`${config.color} text-white flex items-center gap-1`}>
+        <Icon className="h-3 w-3" />
+        {config.text}
+      </Badge>
+    );
+  };
+
+  const calculateRemainingDays = (endDate) => {
+    if (!endDate) return 'N/A';
+    const today = new Date();
+    const end = new Date(endDate);
+    const diffTime = end - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Users className="h-8 w-8 text-blue-400" />
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Admin Panel</h1>
+            <p className="text-muted-foreground">Manage users, campaigns, security, and system settings</p>
+            <p className="text-muted-foreground text-sm">
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <Button
+            onClick={fetchUsers}
+            variant="outline"
+            size="sm"
+            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+          >
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      <Tabs defaultValue="user-management" className="space-y-6">
+        <TabsList className="bg-card border-border">
+          <TabsTrigger value="user-management" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Users className="h-4 w-4 mr-2" />
+            User Management
+          </TabsTrigger>
+          <TabsTrigger value="campaign-management" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Target className="h-4 w-4 mr-2" />
+            Campaign Management
+          </TabsTrigger>
+          <TabsTrigger value="security-threats" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Shield className="h-4 w-4 mr-2" />
+            Security & Threats
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="user-management" className="space-y-6">
+          {/* Filters */}
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-input border-border text-foreground"
+              />
+            </div>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-48 bg-input border-border text-foreground">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="w-48 bg-input border-border text-foreground">
+                <SelectValue placeholder="All Roles" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="main_admin">Main Admin</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="member">Member</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="flex gap-2">
+              <Button variant="outline" className="border-border text-foreground hover:bg-accent">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Button className="bg-primary hover:bg-primary/90">
+                <Plus className="h-4 w-4 mr-2" />
+                Add User
+              </Button>
+            </div>
+          </div>
+
+          {/* User Management Table */}
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                User Management
+                <Badge variant="outline" className="border-primary text-primary">
+                  {filteredUsers.length} users
+                </Badge>
+              </CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Comprehensive user management with detailed subscription and activity information
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="text-muted-foreground mt-2">Loading users...</p>
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    No users found matching your criteria.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border">
+                        <TableHead className="text-muted-foreground">USER ID</TableHead>
+                        <TableHead className="text-muted-foreground">USERNAME</TableHead>
+                        <TableHead className="text-muted-foreground">EMAIL</TableHead>
+                        <TableHead className="text-muted-foreground">ROLE</TableHead>
+                        <TableHead className="text-muted-foreground">STATUS</TableHead>
+                        <TableHead className="text-muted-foreground">SUBSCRIPTION PLAN</TableHead>
+                        <TableHead className="text-muted-foreground">SUBSCRIPTION START</TableHead>
+                        <TableHead className="text-muted-foreground">SUBSCRIPTION END</TableHead>
+                        <TableHead className="text-muted-foreground">REMAINING DAYS</TableHead>
+                        <TableHead className="text-muted-foreground">CAMPAIGNS ASSIGNED</TableHead>
+                        <TableHead className="text-muted-foreground">LAST LOGIN</TableHead>
+                        <TableHead className="text-muted-foreground">CREATED AT</TableHead>
+                        <TableHead className="text-muted-foreground">ACTIONS</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.map((user, index) => (
+                        <TableRow key={user.id || index} className="border-border hover:bg-accent/50">
+                          <TableCell className="text-foreground">
+                            <Badge variant="outline" className="border-blue-500 text-blue-400">
+                              U{user.id || index + 1}
+                            </Badge>
+                          </TableCell>
+                          
+                          <TableCell className="text-foreground">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">{user.username || 'N/A'}</span>
+                            </div>
+                          </TableCell>
+                          
+                          <TableCell className="text-foreground">
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{user.email || 'N/A'}</span>
+                            </div>
+                          </TableCell>
+                          
+                          <TableCell>{getRoleBadge(user.role)}</TableCell>
+                          
+                          <TableCell>{getStatusBadge(user.status || 'pending')}</TableCell>
+                          
+                          <TableCell className="text-foreground">
+                            <span className="text-sm">{user.subscription_plan || '1 Day Trial'}</span>
+                          </TableCell>
+                          
+                          <TableCell className="text-foreground">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{formatDate(user.subscription_start)}</span>
+                            </div>
+                          </TableCell>
+                          
+                          <TableCell className="text-foreground">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{formatDate(user.subscription_end)}</span>
+                            </div>
+                          </TableCell>
+                          
+                          <TableCell className="text-foreground">
+                            <Badge variant="outline" className="border-yellow-500 text-yellow-400">
+                              {calculateRemainingDays(user.subscription_end)} days
+                            </Badge>
+                          </TableCell>
+                          
+                          <TableCell className="text-foreground">
+                            <span className="text-blue-400 cursor-pointer hover:underline">
+                              {user.campaigns_count || 0}
+                            </span>
+                          </TableCell>
+                          
+                          <TableCell className="text-foreground">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{formatDateTime(user.last_login)}</span>
+                            </div>
+                          </TableCell>
+                          
+                          <TableCell className="text-foreground">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{formatDate(user.created_at)}</span>
+                            </div>
+                          </TableCell>
+                          
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleUserAction(user.id, 'view')}
+                                className="h-8 w-8 p-0"
+                                title="View User"
+                              >
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                              
+                              {user.status === 'pending' && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleUserAction(user.id, 'approve')}
+                                  className="h-8 w-8 p-0 text-green-400 hover:text-green-300"
+                                  title="Approve User"
+                                >
+                                  <CheckCircle className="h-3 w-3" />
+                                </Button>
+                              )}
+                              
+                              {user.status !== 'suspended' && user.role !== 'main_admin' && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleUserAction(user.id, 'suspend')}
+                                  className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
+                                  title="Suspend User"
+                                >
+                                  <Ban className="h-3 w-3" />
+                                </Button>
+                              )}
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                                    <MoreVertical className="h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="bg-popover border-border">
+                                  <DropdownMenuItem className="text-foreground hover:bg-accent">
+                                    <Clock className="h-3 w-3 mr-2" />
+                                    Extend Subscription
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-red-400 hover:bg-accent">
+                                    Delete User
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="campaign-management" className="space-y-6">
+          <Card className="bg-card border-border">
+            <CardContent className="p-8 text-center">
+              <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">Campaign Management</h3>
+              <p className="text-muted-foreground">Campaign management features will be implemented here.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="security-threats" className="space-y-6">
+          <Card className="bg-card border-border">
+            <CardContent className="p-8 text-center">
+              <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">Security & Threats</h3>
+              <p className="text-muted-foreground">Security monitoring and threat detection features will be implemented here.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-6">
+          <Card className="bg-card border-border">
+            <CardContent className="p-8 text-center">
+              <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">System Settings</h3>
+              <p className="text-muted-foreground">System configuration and settings will be implemented here.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 };
 
 export default AdminPanel;
-
 

@@ -13,7 +13,6 @@ import Security from './components/Security'
 import Settings from './components/Settings'
 import LinkShortener from './components/LinkShortener'
 import AdminPanel from './components/AdminPanel'
-import ChatSystem from './components/ChatSystem'
 import './App.css'
 
 function App() {
@@ -74,12 +73,8 @@ function App() {
                 <Route path="/security" element={<Security />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/link-shortener" element={<LinkShortener />} />
-                <Route path="/chat" element={<ChatSystem isAdmin={false} userId={user?.id} />} />
-                {(user?.role === 'admin' || user?.username === 'Brain') && (
+                {user && (user.role === "admin" || user.role === "main_admin") && (
                   <Route path="/admin-panel" element={<AdminPanel />} />
-                )}
-                {(user?.role === 'admin' || user?.username === 'Brain') && (
-                  <Route path="/admin-chat" element={<ChatSystem isAdmin={true} />} />
                 )}
               </Routes>
             </Layout>

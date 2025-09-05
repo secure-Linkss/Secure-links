@@ -8,6 +8,13 @@ logger = logging.getLogger(__name__)
 
 settings_bp = Blueprint('settings', __name__)
 
+def require_auth():
+    """Check if user is authenticated via session"""
+    if 'user_id' not in session:
+        return None
+    user = User.query.get(session['user_id'])
+    return user
+
 @settings_bp.route('/api/settings', methods=['GET'])
 def get_settings():
     """Get user settings"""
@@ -97,8 +104,8 @@ def test_telegram():
         if not data:
             return jsonify({'success': False, 'error': 'No data provided'}), 400
         
-        bot_token = data.get('bot_token', '7856054462:AAGYUc-I0E84I8uiWB_F0vkHXg-njyd1NJE')
-        chat_id = data.get('chat_id', '7349932372')
+        bot_token = data.get('bot_token')
+        chat_id = data.get('chat_id')
         
         if not bot_token or not chat_id:
             return jsonify({'success': False, 'error': 'Bot token and chat ID are required'}), 400
@@ -401,25 +408,52 @@ def get_campaigns():
         if 'user_id' not in session:
             return jsonify({'success': False, 'error': 'Not authenticated'}), 401
         
-        # Mock data for now - replace with actual database queries
-        campaigns = [
-            {
-                'id': 1,
-                'name': 'Summer Sale Campaign',
-                'links_count': 3,
-                'total_clicks': 1247,
-                'captured_emails': 156,
-                'status': 'active'
-            },
-            {
-                'id': 2,
-                'name': 'Product Launch',
-                'links_count': 2,
-                'total_clicks': 892,
-                'captured_emails': 89,
-                'status': 'active'
-            }
-        ]
+        from src.models.link import Link
+        from src.models.tracking_event import TrackingEvent
+        from sqlalchemy import func
+        
+        # Get user's links grouped by campaign
+        user_links = Link.query.filter_by(user_id=session['user_id']).all()
+        
+        # Group links by campaign name
+        campaigns_dict = {}
+        for link in user_links:
+            campaign_name = link.campaign_name or 'Default Campaign'
+            if campaign_name not in campaigns_dict:
+                campaigns_dict[campaign_name] = {
+                    'id': len(campaigns_dict) + 1,
+                    'name': campaign_name,
+                    'links': [],
+                    'total_clicks': 0,
+                    'captured_emails': 0,
+                    'status': 'active'
+                }
+            campaigns_dict[campaign_name]['links'].append(link)
+        
+        # Calculate statistics for each campaign
+        campaigns = []
+        for campaign_name, campaign_data in campaigns_dict.items():
+            link_ids = [link.id for link in campaign_data['links']]
+            
+            # Count total clicks
+            total_clicks = TrackingEvent.query.filter(
+                TrackingEvent.link_id.in_(link_ids)
+            ).count() if link_ids else 0
+            
+            # Count captured emails
+            captured_emails = TrackingEvent.query.filter(
+                TrackingEvent.link_id.in_(link_ids),
+                TrackingEvent.captured_email.isnot(None)
+            ).count() if link_ids else 0
+            
+            campaigns.append({
+                'id': campaign_data['id'],
+                'name': campaign_name,
+                'links_count': len(campaign_data['links']),
+                'total_clicks': total_clicks,
+                'captured_emails': captured_emails,
+                'status': campaign_data['status']
+            })
         
         return jsonify({
             'success': True,
@@ -435,12 +469,13 @@ def get_campaigns():
 def test_telegram_connection():
     """Test Telegram connection"""
     try:
-        if 'user_id' not in session:
+        user = require_auth()
+        if not user:
             return jsonify({'success': False, 'error': 'Not authenticated'}), 401
         
         data = request.get_json()
-        bot_token = data.get('botToken')
-        chat_id = data.get('chatId')
+        bot_token = data.get('botToken')  # Frontend sends camelCase
+        chat_id = data.get('chatId')      # Frontend sends camelCase
         
         if not bot_token or not chat_id:
             return jsonify({'error': 'Bot token and chat ID are required'}), 400

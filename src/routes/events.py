@@ -1,9 +1,8 @@
 from flask import Blueprint, request, jsonify, session
-from src.models.user import User
+from src.models.user import User, db
 from src.models.link import Link
 from src.models.tracking_event import TrackingEvent
-from src.models.user import db
-import sqlite3
+from datetime import datetime, timedelta
 import os
 
 events_bp = Blueprint('events', __name__)
@@ -12,12 +11,6 @@ def require_auth():
     if 'user_id' not in session:
         return None
     return User.query.get(session['user_id'])
-
-def get_db_connection():
-    db_path = os.path.join(os.path.dirname(__file__), '..', 'database', 'app.db')
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
 
 def get_detailed_status(event):
     """Generate detailed status description based on event data"""
@@ -60,19 +53,28 @@ def get_events():
         events_list = []
         for event, short_code in events:
             # Format timestamp for display
-            timestamp_str = event.timestamp.strftime('%Y-%m-%d %H:%M:%S') if event.timestamp else 'Unknown'
+            now = datetime.utcnow()
+            time_diff = now - event.timestamp
+            if time_diff.days > 0:
+                timestamp_str = f"{time_diff.days} days ago"
+            elif time_diff.seconds > 3600:
+                timestamp_str = f"{time_diff.seconds // 3600} hours ago"
+            elif time_diff.seconds > 60:
+                timestamp_str = f"{time_diff.seconds // 60} minutes ago"
+            else:
+                timestamp_str = "Just now"
             
             # Create location string
             location_parts = []
-            if event.city and event.city != 'Unknown':
+            if event.city and event.city != "Unknown":
                 location_parts.append(event.city)
-            if event.region and event.region != 'Unknown':
+            if event.region and event.region != "Unknown":
                 location_parts.append(event.region)
-            if event.zip_code and event.zip_code != 'Unknown':
+            if event.zip_code and event.zip_code != "Unknown":
                 location_parts.append(event.zip_code)
-            if event.country and event.country != 'Unknown':
+            if event.country and event.country != "Unknown":
                 location_parts.append(event.country)
-            location = ', '.join(location_parts) if location_parts else 'Unknown Location'
+            location = ", ".join(location_parts) if location_parts else "Unknown Location"
             
             # Format browser and OS info
             browser_info = f"{event.browser or 'Unknown'}"
@@ -91,29 +93,29 @@ def get_events():
                 session_duration = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
             
             events_list.append({
-                'id': event.id,
-                'uniqueId': event.unique_id or f"uid_{short_code}_{event.id:03d}",
-                'timestamp': timestamp_str,
-                'ip': event.ip_address or 'Unknown',
-                'location': location,
-                'zipCode': event.zip_code or 'Unknown',
-                'region': event.region or 'Unknown',
-                'country': event.country or 'Unknown',
-                'city': event.city or 'Unknown',
-                'userAgent': event.user_agent or 'Unknown',
-                'browser': browser_info,
-                'os': os_info,
-                'device': event.device_type or 'Unknown',
-                'status': event.status or 'Open',
-                'detailedStatus': get_detailed_status(event),
-                'linkId': short_code or f"link_{event.link_id}",
-                'campaignId': f"camp_{event.link_id:03d}",
-                'referrer': event.referrer or 'direct',
-                'isp': event.isp or 'Unknown',
-                'ispDetails': event.organization or event.isp or 'Unknown ISP',
-                'emailCaptured': event.captured_email,
-                'conversionValue': 0,  # This would need to be calculated based on business logic
-                'sessionDuration': session_duration
+                "id": event.id,
+                "uniqueId": event.unique_id or f"uid_{short_code}_{event.id:03d}",
+                "timestamp": timestamp_str,
+                "ip": event.ip_address or "Unknown",
+                "location": location,
+                "zipCode": event.zip_code or "Unknown",
+                "region": event.region or "Unknown",
+                "country": event.country or "Unknown",
+                "city": event.city or "Unknown",
+                "userAgent": event.user_agent or "Unknown",
+                "browser": browser_info,
+                "os": os_info,
+                "device": event.device_type or "Unknown",
+                "status": event.status or "Open",
+                "detailedStatus": get_detailed_status(event),
+                "linkId": short_code or f"link_{event.link_id}",
+                "campaignId": f"camp_{event.link_id:03d}",
+                "referrer": event.referrer or "direct",
+                "isp": event.isp or "Unknown",
+                "ispDetails": event.organization or event.isp or "Unknown ISP",
+                "emailCaptured": event.captured_email,
+                "conversionValue": 0,  # This would need to be calculated based on business logic
+                "sessionDuration": session_duration
             })
         
         return jsonify({
@@ -129,16 +131,11 @@ def get_events():
 def pixel_tracking(link_id):
     """Handle pixel tracking requests"""
     try:
-        conn = get_db_connection()
-        
-        # Get link details
-        link = conn.execute(
-            'SELECT * FROM links WHERE id = ? OR short_code = ?',
-            (link_id, link_id)
-        ).fetchone()
-        
+        link = Link.query.filter(Link.id == link_id).first()
         if not link:
-            conn.close()
+            link = Link.query.filter(Link.short_code == link_id).first()
+
+        if not link:
             return '', 404
         
         # Get request details
@@ -157,22 +154,27 @@ def pixel_tracking(link_id):
         on_page = False     # This would require a separate signal from the landing page
         
         # Insert tracking event
-        conn.execute("""
-            INSERT INTO tracking_events 
-            (link_id, ip_address, user_agent, country, city, isp, timestamp, status, unique_id, email_opened, redirected, on_page)
-            VALUES (?, ?, ?, ?, ?, ?, datetime("now"), "processed", ?, ?, ?, ?)
-        """, (link["id"], ip_address, user_agent, country, city, isp, uid, email_opened, redirected, on_page))
+        new_event = TrackingEvent(
+            link_id=link.id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            country=country,
+            city=city,
+            isp=isp,
+            timestamp=datetime.utcnow(),
+            status="processed",
+            unique_id=uid,
+            email_opened=email_opened,
+            redirected=redirected,
+            on_page=on_page
+        )
+        db.session.add(new_event)
         
         # Update link statistics
-        conn.execute('''
-            UPDATE links 
-            SET total_clicks = total_clicks + 1,
-                real_visitors = real_visitors + 1
-            WHERE id = ?
-        ''', (link['id'],))
+        link.total_clicks = (link.total_clicks or 0) + 1
+        link.real_visitors = (link.real_visitors or 0) + 1
         
-        conn.commit()
-        conn.close()
+        db.session.commit()
         
         # Return 1x1 transparent pixel
         pixel_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82'
@@ -185,6 +187,7 @@ def pixel_tracking(link_id):
         }
         
     except Exception as e:
+        db.session.rollback()
         print(f"Error in pixel tracking: {e}")
         return '', 500
 
@@ -222,9 +225,12 @@ def delete_event(event_id):
         db.session.commit()
         
         return jsonify({'success': True, 'message': 'Event deleted successfully'})
-        
+
+
+
     except Exception as e:
         db.session.rollback()
         print(f"Error deleting event: {e}")
         return jsonify({'error': 'Failed to delete event'}), 500
+
 

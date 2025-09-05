@@ -432,3 +432,34 @@ def toggle_link_status(link_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": "Failed to toggle link status"}), 500
+
+
+@links_bp.route("/links/<int:link_id>", methods=["DELETE"])
+def delete_link_by_id(link_id):
+    """Delete a tracking link by ID"""
+    user = require_auth()
+    if not user:
+        return jsonify({"success": False, "error": "Authentication required"}), 401
+    
+    try:
+        link = Link.query.filter_by(id=link_id, user_id=user.id).first()
+        if not link:
+            return jsonify({"success": False, "error": "Link not found or access denied"}), 404
+        
+        # Delete associated tracking events first
+        TrackingEvent.query.filter_by(link_id=link.id).delete()
+        
+        # Delete the link
+        db.session.delete(link)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Tracking link deleted successfully"
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error deleting link: {e}")
+        return jsonify({"success": False, "error": "Failed to delete tracking link"}), 500
+

