@@ -2,26 +2,34 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/auth/login.py",
+      "src": "api/index.py",
       "use": "@vercel/python"
-    },
-    {
-      "src": "src/static/**",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/api/auth/login",
-      "dest": "/api/auth/login.py"
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
     },
     {
-      "src": "/assets/(.*)",
-      "dest": "/src/static/assets/$1"
+      "src": "/s/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/p/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/pixel/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/t/(.*)",
+      "dest": "api/index.py"
     },
     {
       "src": "/(.*)",
-      "dest": "/src/static/index.html"
+      "dest": "api/index.py"
     }
   ],
   "env": {
