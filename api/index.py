@@ -10,7 +10,7 @@ from src.models.link import Link
 from src.models.tracking_event import TrackingEvent
 from src.models.campaign import Campaign
 from src.models.audit_log import AuditLog
-from src.models.security import Security
+from src.models.security import SecuritySettings
 from src.routes.user import user_bp
 from src.routes.auth import auth_bp
 from src.routes.links import links_bp
