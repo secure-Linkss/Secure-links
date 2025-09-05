@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/app.py",
+      "src": "api/auth/login.py",
       "use": "@vercel/python"
     },
     {
@@ -12,24 +12,8 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/app.py"
-    },
-    {
-      "src": "/s/(.*)",
-      "dest": "/api/app.py"
-    },
-    {
-      "src": "/p/(.*)",
-      "dest": "/api/app.py"
-    },
-    {
-      "src": "/pixel/(.*)",
-      "dest": "/api/app.py"
-    },
-    {
-      "src": "/t/(.*)",
-      "dest": "/api/app.py"
+      "src": "/api/auth/login",
+      "dest": "/api/auth/login.py"
     },
     {
       "src": "/assets/(.*)",
