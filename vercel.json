@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.py",
+      "src": "api/app.py",
       "use": "@vercel/python"
     },
     {
@@ -13,31 +13,31 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "api/index.py"
+      "dest": "/api/app.py"
     },
     {
       "src": "/s/(.*)",
-      "dest": "api/index.py"
+      "dest": "/api/app.py"
     },
     {
       "src": "/p/(.*)",
-      "dest": "api/index.py"
+      "dest": "/api/app.py"
     },
     {
       "src": "/pixel/(.*)",
-      "dest": "api/index.py"
+      "dest": "/api/app.py"
     },
     {
       "src": "/t/(.*)",
-      "dest": "api/index.py"
+      "dest": "/api/app.py"
     },
     {
       "src": "/assets/(.*)",
-      "dest": "src/static/assets/$1"
+      "dest": "/src/static/assets/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "src/static/index.html"
+      "dest": "/src/static/index.html"
     }
   ],
   "env": {
