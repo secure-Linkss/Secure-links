@@ -1,11 +1,12 @@
 from flask import Blueprint, request, jsonify, session
+from werkzeug.security import generate_password_hash
 from functools import wraps
 from src.models import db
 from src.models.user import User
 from src.models.campaign import Campaign
 from src.models.audit_log import AuditLog
 from src.models.link import Link
-from datetime import datetime
+from datetime import datetime, timedelta
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -408,6 +409,89 @@ def get_campaign_analytics(current_user):
         'completed_campaigns': completed_campaigns,
         'total_links': total_links
     })
+
+@admin_bp.route('/users/<int:user_id>/change-password', methods=['POST'])
+@admin_required
+def change_user_password(current_user, user_id):
+    """Change user password (admin action)"""
+    user = User.query.get_or_404(user_id)
+    
+    # Admin can only change member passwords, main admin can change anyone's except their own username
+    if current_user.role == 'admin' and user.role != 'member':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    data = request.get_json()
+    if not data or 'new_password' not in data:
+        return jsonify({'error': 'New password is required'}), 400
+    
+    new_password = data['new_password']
+    if len(new_password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters long'}), 400
+    
+    # Update password
+    user.password_hash = generate_password_hash(new_password)
+    user.updated_at = datetime.utcnow()
+    db.session.commit()
+    
+    # Log action
+    log_admin_action(current_user.id, f"Changed password for user {user.username}", user.id, 'user')
+    
+    return jsonify({'message': f'Password changed successfully for user {user.username}'})
+
+@admin_bp.route('/users/<int:user_id>/extend', methods=['POST'])
+@admin_required
+def extend_user_subscription(current_user, user_id):
+    """Extend user subscription (POST endpoint for admin panel)"""
+    user = User.query.get_or_404(user_id)
+    
+    # Admin can only extend members
+    if current_user.role == 'admin' and user.role != 'member':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    data = request.get_json() or {}
+    days_to_extend = data.get('days', 30)  # Default 30 days
+    
+    # Extend subscription
+    if user.subscription_end:
+        user.subscription_end = user.subscription_end + timedelta(days=days_to_extend)
+    else:
+        user.subscription_end = datetime.utcnow() + timedelta(days=days_to_extend)
+    
+    # Update status if expired
+    if user.status == 'expired':
+        user.status = 'active'
+    
+    db.session.commit()
+    
+    # Log action
+    log_admin_action(current_user.id, f"Extended user {user.username} subscription by {days_to_extend} days", user.id, 'user')
+    
+    return jsonify(user.to_dict())
+
+@admin_bp.route('/users/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def delete_user_action(current_user, user_id):
+    """Delete user (POST endpoint for admin panel)"""
+    user = User.query.get_or_404(user_id)
+    
+    # Cannot delete main admin
+    if user.role == 'main_admin':
+        return jsonify({'error': 'Cannot delete main admin'}), 403
+    
+    # Admin can only delete members
+    if current_user.role == 'admin' and user.role != 'member':
+        return jsonify({'error': 'Access denied'}), 403
+    
+    username = user.username
+    
+    # Delete user
+    db.session.delete(user)
+    db.session.commit()
+    
+    # Log action
+    log_admin_action(current_user.id, f"Deleted user {username}", user_id, 'user')
+    
+    return jsonify({'message': f'User {username} deleted successfully'})
 
 # Audit Logs Endpoints
 @admin_bp.route('/audit-logs', methods=['GET'])
