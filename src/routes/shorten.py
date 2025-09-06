@@ -67,12 +67,11 @@ def shorten_url():
         
         # Create link record in database
         link = Link(
-            original_url=original_url,
+            target_url=original_url,
             short_code=short_code,
-            title="Shortened Link",
             campaign_name="Quick Shorten",
             user_id=1,  # Default user for anonymous shortening
-            is_active=True
+            status='active'
         )
         
         db.session.add(link)
