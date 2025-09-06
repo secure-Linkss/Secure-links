@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './hooks/useTheme'
 import Layout from './components/Layout'
@@ -13,6 +13,7 @@ import Security from './components/Security'
 import Settings from './components/Settings'
 import LinkShortener from './components/LinkShortener'
 import AdminPanel from './components/AdminPanel'
+import NotificationSystem from './components/NotificationSystem'
 import './App.css'
 
 function App() {
@@ -73,6 +74,7 @@ function App() {
                 <Route path="/security" element={<Security />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/link-shortener" element={<LinkShortener />} />
+                <Route path="/notifications" element={<NotificationSystem />} />
                 {user && (user.role === "admin" || user.role === "main_admin") && (
                   <Route path="/admin-panel" element={<AdminPanel />} />
                 )}

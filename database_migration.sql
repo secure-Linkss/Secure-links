@@ -54,20 +54,19 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 ALTER TABLE links ADD COLUMN IF NOT EXISTS campaign_id INTEGER;
 
 -- Update existing users to have proper default values
-UPDATE users SET 
-    role = 'member' WHERE role IS NULL,
-    login_count = 0 WHERE login_count IS NULL,
-    failed_login_attempts = 0 WHERE failed_login_attempts IS NULL,
-    is_active = TRUE WHERE is_active IS NULL,
-    is_verified = FALSE WHERE is_verified IS NULL,
-    plan_type = 'free' WHERE plan_type IS NULL,
-    subscription_plan = '1 Day Trial' WHERE subscription_plan IS NULL,
-    status = 'pending' WHERE status IS NULL,
-    campaigns_count = 0 WHERE campaigns_count IS NULL,
-    daily_link_limit = 10 WHERE daily_link_limit IS NULL,
-    links_used_today = 0 WHERE links_used_today IS NULL,
-    last_reset_date = CURRENT_DATE WHERE last_reset_date IS NULL,
-    telegram_enabled = FALSE WHERE telegram_enabled IS NULL;
+UPDATE users SET role = 'member' WHERE role IS NULL;
+UPDATE users SET login_count = 0 WHERE login_count IS NULL;
+UPDATE users SET failed_login_attempts = 0 WHERE failed_login_attempts IS NULL;
+UPDATE users SET is_active = TRUE WHERE is_active IS NULL;
+UPDATE users SET is_verified = FALSE WHERE is_verified IS NULL;
+UPDATE users SET plan_type = 'free' WHERE plan_type IS NULL;
+UPDATE users SET subscription_plan = '1 Day Trial' WHERE subscription_plan IS NULL;
+UPDATE users SET status = 'pending' WHERE status IS NULL;
+UPDATE users SET campaigns_count = 0 WHERE campaigns_count IS NULL;
+UPDATE users SET daily_link_limit = 10 WHERE daily_link_limit IS NULL;
+UPDATE users SET links_used_today = 0 WHERE links_used_today IS NULL;
+UPDATE users SET last_reset_date = CURRENT_DATE WHERE last_reset_date IS NULL;
+UPDATE users SET telegram_enabled = FALSE WHERE telegram_enabled IS NULL;
 
 -- Set Brain user as main_admin if exists
 UPDATE users SET role = 'main_admin', is_active = TRUE, is_verified = TRUE, status = 'active' WHERE username = 'Brain';

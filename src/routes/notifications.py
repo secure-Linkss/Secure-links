@@ -5,8 +5,15 @@ from src.models.user import User
 from src.models.audit_log import AuditLog
 from src.models.tracking_event import TrackingEvent
 from datetime import datetime, timedelta
+import psycopg2
+import os
 
 notifications_bp = Blueprint('notifications', __name__)
+
+def get_db_connection():
+    """Get database connection"""
+    db_url = 'postgresql://neondb_owner:npg_7CcKbPRm2GDw@ep-odd-thunder-ade4ip4a-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require'
+    return psycopg2.connect(db_url)
 
 def get_current_user():
     """Get current user from token or session"""
@@ -34,6 +41,163 @@ def login_required(f):
         
         return f(user, *args, **kwargs)
     return decorated_function
+
+@notifications_bp.route('/api/notifications', methods=['GET'])
+def get_all_notifications():
+    """Get all notifications from database"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # For now, get notifications for user_id = 1 (admin user)
+        user_id = 1
+        
+        cursor.execute("""
+            SELECT id, title, message, type, priority, read, created_at, updated_at
+            FROM notifications 
+            WHERE user_id = %s 
+            ORDER BY created_at DESC
+        """, (user_id,))
+        
+        notifications = []
+        for row in cursor.fetchall():
+            notifications.append({
+                'id': row[0],
+                'title': row[1],
+                'message': row[2],
+                'type': row[3],
+                'priority': row[4],
+                'read': row[5],
+                'created_at': row[6].isoformat() if row[6] else None,
+                'updated_at': row[7].isoformat() if row[7] else None
+            })
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'notifications': notifications
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@notifications_bp.route('/api/notifications/<int:notification_id>/read', methods=['PUT'])
+def mark_notification_read(notification_id):
+    """Mark a notification as read"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE notifications 
+            SET read = TRUE, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = %s
+        """, (notification_id,))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Notification marked as read'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@notifications_bp.route('/api/notifications/<int:notification_id>/unread', methods=['PUT'])
+def mark_notification_unread(notification_id):
+    """Mark a notification as unread"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE notifications 
+            SET read = FALSE, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = %s
+        """, (notification_id,))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Notification marked as unread'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@notifications_bp.route('/api/notifications/<int:notification_id>', methods=['DELETE'])
+def delete_notification(notification_id):
+    """Delete a notification"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            DELETE FROM notifications WHERE id = %s
+        """, (notification_id,))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Notification deleted'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@notifications_bp.route('/api/notifications/mark-all-read', methods=['PUT'])
+def mark_all_notifications_read():
+    """Mark all notifications as read for the current user"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # For now, mark all for user_id = 1 (admin user)
+        user_id = 1
+        
+        cursor.execute("""
+            UPDATE notifications 
+            SET read = TRUE, updated_at = CURRENT_TIMESTAMP 
+            WHERE user_id = %s AND read = FALSE
+        """, (user_id,))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'All notifications marked as read'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @notifications_bp.route('/notifications', methods=['GET'])
 @login_required

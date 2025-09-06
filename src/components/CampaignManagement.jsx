@@ -117,6 +117,117 @@ const CampaignManagement = () => {
 
   return (
     <div className="space-y-6">
+      {/* Campaign Management Metrics - 6 Cards Horizontal Layout */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Total Campaigns</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-xl font-bold text-blue-500">{campaigns.length}</div>
+            <p className="text-xs text-muted-foreground">All campaigns</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Active Campaigns</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-xl font-bold text-green-500">{campaigns.filter(c => c.status === 'active').length}</div>
+            <p className="text-xs text-muted-foreground">Currently running</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Total Clicks</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-xl font-bold text-purple-500">{campaigns.reduce((sum, c) => sum + (c.clicks || 0), 0).toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">All time clicks</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Conversion Rate</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-xl font-bold text-orange-500">
+              {campaigns.length > 0 ? 
+                ((campaigns.reduce((sum, c) => sum + (c.emails || 0), 0) / campaigns.reduce((sum, c) => sum + (c.clicks || 1), 0)) * 100).toFixed(1) + '%' 
+                : '0%'}
+            </div>
+            <p className="text-xs text-muted-foreground">Email capture rate</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Email Captures</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-xl font-bold text-teal-500">{campaigns.reduce((sum, c) => sum + (c.emails || 0), 0).toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Total captures</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-xs font-medium text-muted-foreground">Paused Campaigns</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-xl font-bold text-yellow-500">{campaigns.filter(c => c.status === 'paused').length}</div>
+            <p className="text-xs text-muted-foreground">Temporarily stopped</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Campaign Performance Charts - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-foreground">Campaign Performance</CardTitle>
+            <CardDescription>Top performing campaigns by conversion rate</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {campaigns.slice(0, 5).map((campaign, index) => (
+                <div key={campaign.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">{campaign.name}</p>
+                    <p className="text-xs text-muted-foreground">{campaign.clicks} clicks • {campaign.emails} emails</p>
+                  </div>
+                  <div className="text-sm font-bold text-green-500">
+                    {campaign.clicks > 0 ? ((campaign.emails / campaign.clicks) * 100).toFixed(1) : '0'}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-foreground">Campaign Status Distribution</CardTitle>
+            <CardDescription>Breakdown of campaign statuses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {[
+                { status: 'Active', count: campaigns.filter(c => c.status === 'active').length, color: 'bg-green-500' },
+                { status: 'Paused', count: campaigns.filter(c => c.status === 'paused').length, color: 'bg-yellow-500' },
+                { status: 'Completed', count: campaigns.filter(c => c.status === 'completed').length, color: 'bg-blue-500' },
+                { status: 'Draft', count: campaigns.filter(c => c.status === 'draft').length, color: 'bg-gray-500' }
+              ].map((item, index) => (
+                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
+                    <span className="text-sm font-medium text-foreground">{item.status}</span>
+                  </div>
+                  <div className="text-sm font-bold text-foreground">{item.count}</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

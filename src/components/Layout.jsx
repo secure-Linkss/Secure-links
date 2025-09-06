@@ -61,6 +61,7 @@ const Layout = ({ children, user, onLogout }) => {
     { path: '/security', icon: Shield, label: 'Security', badge: 7 },
     { path: '/settings', icon: Settings, label: 'Settings', badge: 8 },
     { path: '/link-shortener', icon: Scissors, label: 'Link Shortener', badge: 9 },
+    { path: '/notifications', icon: Bell, label: 'Notifications', badge: 11, notificationCount: true },
     { path: '/admin-panel', icon: User, label: 'Admin Panel', badge: 10, adminOnly: true },
   ]
 
@@ -104,7 +105,7 @@ const Layout = ({ children, user, onLogout }) => {
                       : 'border-slate-600 text-slate-400'
                   }`}
                 >
-                  {item.badge}
+                  {item.notificationCount && notificationCount > 0 ? notificationCount : item.badge}
                 </Badge>
               </button>
             )

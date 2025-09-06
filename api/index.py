@@ -24,6 +24,8 @@ from src.routes.admin_settings import admin_settings_bp
 from src.routes.security import security_bp
 from src.routes.telegram import telegram_bp
 from src.routes.page_tracking import page_tracking_bp
+from src.routes.shorten import shorten_bp
+from src.routes.notifications import notifications_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), '..', 'src', 'static'))
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'ej5B3Amppi4gjpbC65te6rJuvJzgVCWW_xfB-ZLR1TE')
@@ -43,6 +45,8 @@ app.register_blueprint(admin_settings_bp, url_prefix='/api')
 app.register_blueprint(security_bp, url_prefix='/api')
 app.register_blueprint(telegram_bp, url_prefix='/api')
 app.register_blueprint(page_tracking_bp, url_prefix='/api')
+app.register_blueprint(shorten_bp, url_prefix='/api')
+app.register_blueprint(notifications_bp)
 app.register_blueprint(track_bp)
 app.register_blueprint(events_bp)
 
@@ -98,6 +102,9 @@ def serve(path):
         else:
             return "index.html not found", 404
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
+
+# For gunicorn
+application = app
 

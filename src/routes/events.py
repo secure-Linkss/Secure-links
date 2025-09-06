@@ -4,6 +4,7 @@ from src.models.link import Link
 from src.models.tracking_event import TrackingEvent
 from datetime import datetime, timedelta
 import os
+import re
 
 events_bp = Blueprint('events', __name__)
 
@@ -11,6 +12,89 @@ def require_auth():
     if 'user_id' not in session:
         return None
     return User.query.get(session['user_id'])
+
+def parse_user_agent(user_agent):
+    """Parse user agent string to extract browser, OS, and device information"""
+    if not user_agent or user_agent == "Unknown":
+        return {
+            'browser': 'Unknown',
+            'browser_version': '',
+            'os': 'Unknown',
+            'os_version': '',
+            'device_type': 'Unknown'
+        }
+    
+    # Browser detection
+    browser = 'Unknown'
+    browser_version = ''
+    
+    if 'Chrome' in user_agent:
+        match = re.search(r'Chrome/(\d+\.\d+)', user_agent)
+        browser = 'Chrome'
+        browser_version = match.group(1) if match else ''
+    elif 'Firefox' in user_agent:
+        match = re.search(r'Firefox/(\d+\.\d+)', user_agent)
+        browser = 'Firefox'
+        browser_version = match.group(1) if match else ''
+    elif 'Safari' in user_agent and 'Chrome' not in user_agent:
+        match = re.search(r'Version/(\d+\.\d+)', user_agent)
+        browser = 'Safari'
+        browser_version = match.group(1) if match else ''
+    elif 'Edge' in user_agent:
+        match = re.search(r'Edge/(\d+\.\d+)', user_agent)
+        browser = 'Edge'
+        browser_version = match.group(1) if match else ''
+    elif 'Opera' in user_agent:
+        match = re.search(r'Opera/(\d+\.\d+)', user_agent)
+        browser = 'Opera'
+        browser_version = match.group(1) if match else ''
+    
+    # OS detection
+    os_name = 'Unknown'
+    os_version = ''
+    
+    if 'Windows NT' in user_agent:
+        match = re.search(r'Windows NT (\d+\.\d+)', user_agent)
+        os_name = 'Windows'
+        if match:
+            version = match.group(1)
+            version_map = {
+                '10.0': '10',
+                '6.3': '8.1',
+                '6.2': '8',
+                '6.1': '7',
+                '6.0': 'Vista'
+            }
+            os_version = version_map.get(version, version)
+    elif 'Mac OS X' in user_agent:
+        match = re.search(r'Mac OS X (\d+[._]\d+)', user_agent)
+        os_name = 'macOS'
+        os_version = match.group(1).replace('_', '.') if match else ''
+    elif 'Linux' in user_agent:
+        os_name = 'Linux'
+    elif 'Android' in user_agent:
+        match = re.search(r'Android (\d+\.\d+)', user_agent)
+        os_name = 'Android'
+        os_version = match.group(1) if match else ''
+    elif 'iPhone' in user_agent or 'iPad' in user_agent:
+        match = re.search(r'OS (\d+_\d+)', user_agent)
+        os_name = 'iOS'
+        os_version = match.group(1).replace('_', '.') if match else ''
+    
+    # Device type detection
+    device_type = 'Desktop'
+    if 'Mobile' in user_agent or 'Android' in user_agent:
+        device_type = 'Mobile'
+    elif 'Tablet' in user_agent or 'iPad' in user_agent:
+        device_type = 'Tablet'
+    
+    return {
+        'browser': browser,
+        'browser_version': browser_version,
+        'os': os_name,
+        'os_version': os_version,
+        'device_type': device_type
+    }
 
 def get_detailed_status(event):
     """Generate detailed status description based on event data"""
@@ -76,14 +160,17 @@ def get_events():
                 location_parts.append(event.country)
             location = ", ".join(location_parts) if location_parts else "Unknown Location"
             
-            # Format browser and OS info
-            browser_info = f"{event.browser or 'Unknown'}"
-            if event.browser_version:
-                browser_info += f" {event.browser_version}"
+            # Parse user agent for better browser/OS info
+            ua_info = parse_user_agent(event.user_agent)
             
-            os_info = f"{event.os or 'Unknown'}"
-            if event.os_version:
-                os_info += f" {event.os_version}"
+            # Format browser and OS info
+            browser_info = ua_info['browser']
+            if ua_info['browser_version']:
+                browser_info += f" {ua_info['browser_version']}"
+            
+            os_info = ua_info['os']
+            if ua_info['os_version']:
+                os_info += f" {ua_info['os_version']}"
             
             # Format session duration
             session_duration = "00:00:00"
@@ -105,7 +192,7 @@ def get_events():
                 "userAgent": event.user_agent or "Unknown",
                 "browser": browser_info,
                 "os": os_info,
-                "device": event.device_type or "Unknown",
+                "device": ua_info['device_type'],
                 "status": event.status or "Open",
                 "detailedStatus": get_detailed_status(event),
                 "linkId": short_code or f"link_{event.link_id}",

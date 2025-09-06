@@ -353,41 +353,287 @@ const AdminPanel = () => {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+          {/* Advanced Admin Dashboard Metrics - 8 Cards Horizontal Layout */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+            <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Total Users</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">{dashboardStats.totalUsers}</div>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-blue-500">{dashboardStats.totalUsers}</div>
                 <p className="text-xs text-muted-foreground">+12% from last month</p>
               </CardContent>
             </Card>
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Active Campaigns</CardTitle>
+            <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Active Users</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">{dashboardStats.activeCampaigns}</div>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-green-500">{Math.floor(dashboardStats.totalUsers * 0.85)}</div>
+                <p className="text-xs text-muted-foreground">85% active rate</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Active Campaigns</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-purple-500">{dashboardStats.activeCampaigns}</div>
                 <p className="text-xs text-muted-foreground">+5% from last month</p>
               </CardContent>
             </Card>
-            <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Security Threats</CardTitle>
+            <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Security Threats</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">{dashboardStats.securityThreats}</div>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-red-500">{dashboardStats.securityThreats}</div>
                 <p className="text-xs text-muted-foreground">-8% from last month</p>
               </CardContent>
             </Card>
+            <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Revenue</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-emerald-500">${dashboardStats.revenue.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">+18% from last month</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Support Tickets</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-orange-500">{Math.floor(dashboardStats.totalUsers * 0.05)}</div>
+                <p className="text-xs text-muted-foreground">3 pending</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">System Health</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-teal-500">99.9%</div>
+                <p className="text-xs text-muted-foreground">Uptime</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border hover:shadow-sm transition-shadow">
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">API Calls</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-indigo-500">{(dashboardStats.totalUsers * 150).toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">Today</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Advanced Charts Grid - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Revenue</CardTitle>
+              <CardHeader>
+                <CardTitle className="text-foreground">User Activity Trends</CardTitle>
+                <CardDescription>Daily active users and registrations over time</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-foreground">${dashboardStats.revenue.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">+18% from last month</p>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={[
+                      { date: '2025-08-27', activeUsers: 245, newUsers: 12 },
+                      { date: '2025-08-28', activeUsers: 267, newUsers: 18 },
+                      { date: '2025-08-29', activeUsers: 289, newUsers: 15 },
+                      { date: '2025-08-30', activeUsers: 312, newUsers: 22 },
+                      { date: '2025-08-31', activeUsers: 334, newUsers: 19 },
+                      { date: '2025-09-01', activeUsers: 356, newUsers: 25 },
+                      { date: '2025-09-02', activeUsers: 378, newUsers: 21 },
+                      { date: '2025-09-03', activeUsers: 401, newUsers: 28 },
+                      { date: '2025-09-04', activeUsers: 423, newUsers: 24 },
+                      { date: '2025-09-05', activeUsers: 445, newUsers: 31 },
+                      { date: '2025-09-06', activeUsers: 467, newUsers: 27 }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis 
+                        dataKey="date" 
+                        stroke="#9CA3AF"
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      />
+                      <YAxis stroke="#9CA3AF" tick={{ fontSize: 12 }} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1F2937', 
+                          border: '1px solid #374151',
+                          borderRadius: '8px',
+                          color: '#F9FAFB'
+                        }}
+                      />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="activeUsers" 
+                        stroke="#3B82F6" 
+                        strokeWidth={3}
+                        name="Active Users"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="newUsers" 
+                        stroke="#10B981" 
+                        strokeWidth={3}
+                        name="New Registrations"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">System Performance</CardTitle>
+                <CardDescription>Server metrics and resource utilization</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={[
+                      { time: '00:00', cpu: 45, memory: 62, requests: 1200 },
+                      { time: '04:00', cpu: 38, memory: 58, requests: 890 },
+                      { time: '08:00', cpu: 72, memory: 75, requests: 2100 },
+                      { time: '12:00', cpu: 85, memory: 82, requests: 2800 },
+                      { time: '16:00', cpu: 78, memory: 79, requests: 2400 },
+                      { time: '20:00', cpu: 65, memory: 71, requests: 1900 },
+                      { time: '24:00', cpu: 52, memory: 65, requests: 1400 }
+                    ]}>
+                      <defs>
+                        <linearGradient id="cpuGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#EF4444" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#EF4444" stopOpacity={0.1}/>
+                        </linearGradient>
+                        <linearGradient id="memoryGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#F59E0B" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="time" stroke="#9CA3AF" tick={{ fontSize: 12 }} />
+                      <YAxis stroke="#9CA3AF" tick={{ fontSize: 12 }} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1F2937', 
+                          border: '1px solid #374151',
+                          borderRadius: '8px',
+                          color: '#F9FAFB'
+                        }}
+                      />
+                      <Legend />
+                      <Area 
+                        type="monotone" 
+                        dataKey="cpu" 
+                        stroke="#EF4444" 
+                        strokeWidth={2}
+                        fillOpacity={1} 
+                        fill="url(#cpuGradient)" 
+                        name="CPU Usage (%)"
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="memory" 
+                        stroke="#F59E0B" 
+                        strokeWidth={2}
+                        fillOpacity={1} 
+                        fill="url(#memoryGradient)" 
+                        name="Memory Usage (%)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Additional Admin Insights */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Recent Admin Actions</CardTitle>
+                <CardDescription>Latest administrative activities</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[
+                    { action: 'User account suspended', user: 'john.doe@example.com', time: '2 minutes ago', type: 'warning' },
+                    { action: 'New campaign approved', user: 'sarah.smith@example.com', time: '15 minutes ago', type: 'success' },
+                    { action: 'Security alert resolved', user: 'System', time: '1 hour ago', type: 'info' },
+                    { action: 'Database backup completed', user: 'System', time: '2 hours ago', type: 'success' },
+                    { action: 'API rate limit exceeded', user: 'api_user_123', time: '3 hours ago', type: 'warning' }
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{item.action}</p>
+                        <p className="text-xs text-muted-foreground">{item.user}</p>
+                      </div>
+                      <div className="text-xs text-muted-foreground">{item.time}</div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Top Performing Campaigns</CardTitle>
+                <CardDescription>Highest converting campaigns this month</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[
+                    { name: 'Summer Sale Campaign', conversion: '12.5%', clicks: 1247, emails: 156 },
+                    { name: 'Product Launch', conversion: '10.4%', clicks: 856, emails: 89 },
+                    { name: 'Newsletter Signup', conversion: '15.3%', clicks: 432, emails: 66 },
+                    { name: 'Holiday Promotion', conversion: '8.7%', clicks: 923, emails: 80 },
+                    { name: 'Referral Program', conversion: '18.2%', clicks: 234, emails: 43 }
+                  ].map((campaign, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{campaign.name}</p>
+                        <p className="text-xs text-muted-foreground">{campaign.clicks} clicks • {campaign.emails} emails</p>
+                      </div>
+                      <div className="text-sm font-bold text-green-500">{campaign.conversion}</div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">System Alerts</CardTitle>
+                <CardDescription>Important notifications and warnings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[
+                    { alert: 'High CPU usage detected', severity: 'warning', time: '5 minutes ago' },
+                    { alert: 'Backup completed successfully', severity: 'success', time: '2 hours ago' },
+                    { alert: 'SSL certificate expires in 30 days', severity: 'info', time: '1 day ago' },
+                    { alert: 'Suspicious login attempt blocked', severity: 'error', time: '2 days ago' },
+                    { alert: 'Database optimization completed', severity: 'success', time: '3 days ago' }
+                  ].map((alert, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{alert.alert}</p>
+                        <p className="text-xs text-muted-foreground">{alert.time}</p>
+                      </div>
+                      <div className={`w-2 h-2 rounded-full ${
+                        alert.severity === 'error' ? 'bg-red-500' :
+                        alert.severity === 'warning' ? 'bg-yellow-500' :
+                        alert.severity === 'success' ? 'bg-green-500' : 'bg-blue-500'
+                      }`}></div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -443,59 +689,59 @@ const AdminPanel = () => {
             </div>
           </div>
 
-          {/* 6 Metrics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          {/* 6 Metrics Cards - Compact Horizontal Layout */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Total Users</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-500">{users.length}</div>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-blue-500">{users.length}</div>
                 <p className="text-xs text-muted-foreground">+{Math.floor(users.length * 0.1)} this month</p>
               </CardContent>
             </Card>
             <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Active Users</CardTitle>
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Active Users</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-500">{users.filter(u => u.status === 'active').length}</div>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-green-500">{users.filter(u => u.status === 'active').length}</div>
                 <p className="text-xs text-muted-foreground">Live count</p>
               </CardContent>
             </Card>
             <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Pending Users</CardTitle>
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Pending Users</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-yellow-500">{users.filter(u => u.status === 'pending').length}</div>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-yellow-500">{users.filter(u => u.status === 'pending').length}</div>
                 <p className="text-xs text-muted-foreground">Awaiting approval</p>
               </CardContent>
             </Card>
             <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Admins</CardTitle>
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Admins</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-purple-500">{users.filter(u => u.role === 'admin' || u.role === 'main_admin').length}</div>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-purple-500">{users.filter(u => u.role === 'admin' || u.role === 'main_admin').length}</div>
                 <p className="text-xs text-muted-foreground">Admin accounts</p>
               </CardContent>
             </Card>
             <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Members</CardTitle>
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Members</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-indigo-500">{users.filter(u => u.role === 'member').length}</div>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-indigo-500">{users.filter(u => u.role === 'member').length}</div>
                 <p className="text-xs text-muted-foreground">Regular users</p>
               </CardContent>
             </Card>
             <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Online Now</CardTitle>
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Online Now</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-emerald-500">{Math.floor(users.filter(u => u.status === 'active').length * 0.3)}</div>
+              <CardContent className="pt-0">
+                <div className="text-xl font-bold text-emerald-500">{Math.floor(users.filter(u => u.status === 'active').length * 0.3)}</div>
                 <p className="text-xs text-muted-foreground">Currently online</p>
               </CardContent>
             </Card>

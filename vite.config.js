@@ -16,14 +16,14 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
 
-    origin: "https://5173-i77igszn2sjinwgof9wo8-28fef25c.manus.computer",
+    origin: "https://5173-iouhdad7fk4xpd7hy1d81-dc3dc737.manusvm.computer",
     hmr: {
       protocol: "wss",
       host: "5173-i77igszn2sjinwgof9wo8-28fef25c.manus.computer",
       clientPort: 443,
     },
     allowedHosts: [
-      "5173-i77igszn2sjinwgof9wo8-28fef25c.manus.computer"
+      "5173-iouhdad7fk4xpd7hy1d81-dc3dc737.manusvm.computer"
     ],
     proxy: {
       '/api': {
