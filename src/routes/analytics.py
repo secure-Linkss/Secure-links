@@ -39,10 +39,15 @@ def get_dashboard_analytics():
                 'analytics': {
                     'totalLinks': 0,
                     'totalClicks': 0,
-                    'totalUsers': 2,  # Default users count
+                    'realVisitors': 0,
+                    'capturedEmails': 0,
+                    'activeLinks': 0,
+                    'conversionRate': 0,
                     'avgClicksPerLink': 0
                 },
-                'chartData': []
+                'campaigns': [],
+                'countries': [],
+                'emails': []
             })
         
         # Get tracking events for the period
@@ -133,25 +138,19 @@ def get_dashboard_analytics():
                 'captured': event.timestamp.isoformat() if event.timestamp else None
             })
         
-        # Generate sample chart data for the period
-        chart_data = []
-        for i in range(days):
-            date = start_date + timedelta(days=i)
-            # For now, generate sample data since we don't have real tracking events
-            clicks = len([e for e in events if e.timestamp.date() == date.date()]) if events else 0
-            chart_data.append({
-                'date': date.isoformat(),
-                'clicks': clicks
-            })
-
         return jsonify({
             'analytics': {
                 'totalLinks': total_links,
                 'totalClicks': total_clicks,
-                'totalUsers': User.query.count(),  # Get actual user count
+                'realVisitors': real_visitors,
+                'capturedEmails': captured_emails,
+                'activeLinks': active_links,
+                'conversionRate': round(conversion_rate, 1),
                 'avgClicksPerLink': round(avg_clicks_per_link, 1)
             },
-            'chartData': chart_data
+            'campaigns': campaigns,
+            'countries': countries,
+            'emails': emails
         })
         
     except Exception as e:

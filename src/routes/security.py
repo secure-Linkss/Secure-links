@@ -76,7 +76,10 @@ def get_security_data():
             TrackingEvent.user_agent,
             Link.campaign_name,
             Link.short_code
-        ).join(Link, TrackingEvent.link_id == Link.id).filter(Link.user_id == g.user.id).order_by(TrackingEvent.timestamp.desc()).limit(50).all()
+        ).join(Link, TrackingEvent.link_id == Link.id)
+        .filter(Link.user_id == g.user.id)
+        .order_by(TrackingEvent.timestamp.desc())
+        .limit(50).all()
 
         events_data = []
         for event in events:
@@ -235,7 +238,10 @@ def get_notifications():
             TrackingEvent.user_agent,
             Link.campaign_name,
             Link.short_code
-        ).join(Link, TrackingEvent.link_id == Link.id).filter(Link.user_id == g.user.id).order_by(TrackingEvent.timestamp.desc()).limit(20).all()
+        ).join(Link, TrackingEvent.link_id == Link.id)
+        .filter(Link.user_id == g.user.id)
+        .order_by(TrackingEvent.timestamp.desc())
+        .limit(20).all()
         
         for event in events:
             message = ''

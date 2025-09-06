@@ -1,10 +1,9 @@
-from src.models import db
+from .user import db
 import uuid
 
 class Link(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    campaign_id = db.Column(db.Integer, db.ForeignKey("campaigns.id"), nullable=True) # Added campaign_id
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     target_url = db.Column(db.String(500), nullable=False)
     short_code = db.Column(db.String(10), unique=True, nullable=False)
     campaign_name = db.Column(db.String(255), default="Untitled Campaign")
@@ -29,10 +28,9 @@ class Link(db.Model):
     allowed_cities = db.Column(db.Text, nullable=True)     # JSON string of city names
     blocked_cities = db.Column(db.Text, nullable=True)     # JSON string of city names
 
-    def __init__(self, user_id, target_url, campaign_id=None, short_code=None, campaign_name="Untitled Campaign", status="active", capture_email=False, capture_password=False, bot_blocking_enabled=False, geo_targeting_enabled=False, geo_targeting_type="allow", rate_limiting_enabled=False, dynamic_signature_enabled=False, mx_verification_enabled=False, preview_template_url=None, allowed_countries=None, blocked_countries=None, allowed_regions=None, blocked_regions=None, allowed_cities=None, blocked_cities=None):
+    def __init__(self, user_id, target_url, short_code=None, campaign_name="Untitled Campaign", status="active", capture_email=False, capture_password=False, bot_blocking_enabled=False, geo_targeting_enabled=False, geo_targeting_type="allow", rate_limiting_enabled=False, dynamic_signature_enabled=False, mx_verification_enabled=False, preview_template_url=None, allowed_countries=None, blocked_countries=None, allowed_regions=None, blocked_regions=None, allowed_cities=None, blocked_cities=None):
         self.user_id = user_id
         self.target_url = target_url
-        self.campaign_id = campaign_id
         self.short_code = short_code if short_code else self.generate_short_code()
         self.campaign_name = campaign_name
         self.status = status
@@ -66,7 +64,6 @@ class Link(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "campaign_id": self.campaign_id,
             "target_url": self.target_url,
             "short_code": self.short_code,
             "campaign_name": self.campaign_name,

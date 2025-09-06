@@ -3,7 +3,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date
 import jwt
 import os
-from src.models import db
+
+db = SQLAlchemy()
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -17,7 +18,7 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # New fields for roles and tracking
-    role = db.Column(db.Enum('main_admin', 'admin', 'member', name='user_roles'), default='member')
+    role = db.Column(db.String(20), default='member')  # member, admin, assistant_admin
     last_login = db.Column(db.DateTime)
     last_ip = db.Column(db.String(45))
     login_count = db.Column(db.Integer, default=0)
@@ -29,11 +30,6 @@ class User(db.Model):
     # Subscription and usage
     plan_type = db.Column(db.String(20), default='free')  # free, pro, enterprise
     subscription_expiry = db.Column(db.DateTime, nullable=True)  # Subscription expiry date
-    subscription_plan = db.Column(db.String(50), default='1 Day Trial')  # Plan name
-    subscription_start = db.Column(db.DateTime, nullable=True)  # Subscription start date
-    subscription_end = db.Column(db.DateTime, nullable=True)  # Subscription end date
-    status = db.Column(db.Enum('pending', 'active', 'suspended', 'expired', name='user_status'), default='pending')
-    campaigns_count = db.Column(db.Integer, default=0)  # Number of campaigns assigned
     daily_link_limit = db.Column(db.Integer, default=10)
     links_used_today = db.Column(db.Integer, default=0)
     last_reset_date = db.Column(db.Date, default=date.today())
@@ -91,45 +87,7 @@ class User(db.Model):
         except jwt.InvalidTokenError:
             return None
 
-    def update_status_based_on_subscription(self):
-        """Update user status based on subscription expiry"""
-        if self.role in ['main_admin', 'admin']:
-            # Admins always have active status and lifetime subscription
-            self.status = 'active'
-            return
-        
-        if self.subscription_end:
-            now = datetime.utcnow()
-            if now > self.subscription_end and self.status != 'suspended':
-                self.status = 'expired'
-            elif now <= self.subscription_end and self.status == 'expired':
-                self.status = 'active'
-
-    def get_subscription_plan_display(self):
-        """Get display name for subscription plan"""
-        if self.role in ['main_admin', 'admin']:
-            return 'Lifetime'
-        return self.subscription_plan or '1 Day Trial'
-
-    def get_remaining_days(self):
-        """Get remaining subscription days"""
-        if self.role in ['main_admin', 'admin']:
-            return 'Lifetime'
-        
-        if not self.subscription_end:
-            return 0
-        
-        now = datetime.utcnow()
-        if now > self.subscription_end:
-            return 0
-        
-        remaining = (self.subscription_end - now).days
-        return max(0, remaining)
-
     def to_dict(self, include_sensitive=False):
-        # Update status before returning data
-        self.update_status_based_on_subscription()
-        
         data = {
             'id': self.id,
             'username': self.username,
@@ -141,15 +99,9 @@ class User(db.Model):
             'is_verified': self.is_verified,
             'plan_type': self.plan_type,
             'subscription_expiry': self.subscription_expiry.isoformat() if self.subscription_expiry else None,
-            'subscription_plan': self.get_subscription_plan_display(),
-            'subscription_start': self.subscription_start.isoformat() if self.subscription_start else None,
-            'subscription_end': self.subscription_end.isoformat() if self.subscription_end else None,
-            'status': self.status,
-            'campaigns_count': self.campaigns_count,
             'daily_link_limit': self.daily_link_limit,
             'links_used_today': self.links_used_today,
-            'last_reset_date': self.last_reset_date.isoformat() if self.last_reset_date else None,
-            'remaining_days': self.get_remaining_days()
+            'last_reset_date': self.last_reset_date.isoformat() if self.last_reset_date else None
         }
         if include_sensitive:
             data.update({
@@ -160,8 +112,5 @@ class User(db.Model):
                 'account_locked_until': self.account_locked_until.isoformat() if self.account_locked_until else None,
             })
         return data
-
-
-
 
 

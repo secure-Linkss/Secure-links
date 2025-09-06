@@ -5,14 +5,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from flask import Flask, send_from_directory
 from flask_cors import CORS
-from src.models import db
-from src.models.user import User
-from src.models.campaign import Campaign
+from src.models.user import db, User
 from src.models.link import Link
 from src.models.tracking_event import TrackingEvent
-from src.models.audit_log import AuditLog
-
-from flask_migrate import Migrate
 from src.routes.user import user_bp
 from src.routes.auth import auth_bp
 from src.routes.links import links_bp
@@ -20,12 +15,6 @@ from src.routes.track import track_bp
 from src.routes.events import events_bp
 from src.routes.analytics import analytics_bp
 from src.routes.campaigns import campaigns_bp
-from src.routes.admin import admin_bp
-from src.routes.admin_settings import admin_settings_bp
-from src.routes.notifications import notifications_bp
-from src.routes.security import security_bp
-from src.routes.user_settings import user_settings_bp
-from src.routes.shorten import shorten_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), '..', 'src', 'static'))
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'ej5B3Amppi4gjpbC65te6rJuvJzgVCWW_xfB-ZLR1TE')
@@ -39,12 +28,6 @@ app.register_blueprint(auth_bp, url_prefix='/api')
 app.register_blueprint(links_bp, url_prefix='/api')
 app.register_blueprint(analytics_bp, url_prefix='/api')
 app.register_blueprint(campaigns_bp, url_prefix='/api')
-app.register_blueprint(admin_bp, url_prefix='/api/admin')
-app.register_blueprint(admin_settings_bp, url_prefix='/api/settings')
-app.register_blueprint(notifications_bp, url_prefix='/api')
-app.register_blueprint(security_bp)
-app.register_blueprint(user_settings_bp, url_prefix='/api')
-app.register_blueprint(shorten_bp, url_prefix='/api')
 app.register_blueprint(track_bp)
 app.register_blueprint(events_bp)
 
@@ -58,10 +41,18 @@ else:
     os.makedirs(os.path.join(os.path.dirname(__file__), '..', 'src', 'database'), exist_ok=True)
     app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirname(__file__), '..', 'src', 'database', 'app.db')}"
 
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
-migrate = Migrate(app, db)
+
+with app.app_context():
+    db.create_all()
+    # Create default admin user if not exists
+    if not User.query.filter_by(username="Brain").first():
+        admin_user = User(username="Brain", email="admin@brainlinktracker.com")
+        admin_user.set_password("Mayflower1!!")
+        db.session.add(admin_user)
+        db.session.commit()
+        print("Default admin user \"Brain\" created.")
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -83,27 +74,7 @@ def serve(path):
         else:
             return "index.html not found", 404
 
-# Initialize database tables in production
-with app.app_context():
-    try:
-        db.create_all()
-        
-        # Create default main admin user if not exists
-        if not User.query.filter_by(username="Brain").first():
-            admin_user = User(username="Brain", email="admin@brainlinktracker.com", role="main_admin")
-            admin_user.set_password("Mayflower1!!")
-            db.session.add(admin_user)
-            db.session.commit()
-            print("Default main admin user \"Brain\" created.")
-        # Create default admin user if not exists
-        if not User.query.filter_by(username="7thbrain").first():
-            admin_user = User(username="7thbrain", email="admin@example.com", role="admin")
-            admin_user.set_password("Mayflower1!")
-            db.session.add(admin_user)
-            db.session.commit()
-            print("Default admin user \"7thbrain\" created.")
-    except Exception as e:
-        print(f"Database initialization error: {e}")
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)

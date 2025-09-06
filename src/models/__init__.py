@@ -1,11 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
-
-from .user import User
-from .campaign import Campaign
+from .user import User, db
 from .link import Link
 from .tracking_event import TrackingEvent
-from .audit_log import AuditLog
+from .security import SecuritySettings, BlockedIP, BlockedCountry
 
 

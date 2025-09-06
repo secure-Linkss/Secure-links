@@ -13,7 +13,7 @@ class SecuritySettings(db.Model):
     suspicious_activity_detection = db.Column(db.Boolean, default=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-
+    user = db.relationship('User', backref='security_settings', uselist=False)
 
     def __repr__(self):
         return f'<SecuritySettings {self.user_id}>'
