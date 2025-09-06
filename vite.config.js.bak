@@ -14,17 +14,6 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    strictPort: true,
-
-    origin: "https://5173-i77igszn2sjinwgof9wo8-28fef25c.manus.computer",
-    hmr: {
-      protocol: "wss",
-      host: "5173-i77igszn2sjinwgof9wo8-28fef25c.manus.computer",
-      clientPort: 443,
-    },
-    allowedHosts: [
-      "5173-i77igszn2sjinwgof9wo8-28fef25c.manus.computer"
-    ],
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
