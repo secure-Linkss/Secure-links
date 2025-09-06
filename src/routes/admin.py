@@ -519,3 +519,174 @@ def get_audit_log(current_user, log_id):
     log = AuditLog.query.get_or_404(log_id)
     return jsonify(log.to_dict())
 
+
+# Dashboard Stats Endpoint
+@admin_bp.route('/dashboard-stats', methods=['GET'])
+@admin_required
+def get_dashboard_stats(current_user):
+    """Get dashboard statistics"""
+    from src.models.tracking_event import TrackingEvent
+    from datetime import datetime, timedelta
+    
+    # Calculate stats
+    total_users = User.query.count()
+    active_users = User.query.filter_by(is_active=True).count()
+    total_campaigns = Campaign.query.count()
+    active_campaigns = Campaign.query.filter_by(status='active').count()
+    total_links = Link.query.count()
+    
+    # Calculate clicks from tracking events
+    total_clicks = TrackingEvent.query.count()
+    
+    # Calculate revenue (placeholder - implement based on your billing system)
+    revenue = 0  # TODO: Implement revenue calculation
+    
+    # Calculate captured emails (placeholder - implement based on your email capture system)
+    captured_emails = 0  # TODO: Implement email capture count
+    
+    # Calculate conversion rate (placeholder)
+    conversion_rate = 0  # TODO: Implement conversion rate calculation
+    
+    # Security threats count (placeholder)
+    security_threats = 0  # TODO: Implement security threats count
+    
+    return jsonify({
+        'totalUsers': total_users,
+        'activeUsers': active_users,
+        'activeCampaigns': active_campaigns,
+        'securityThreats': security_threats,
+        'revenue': revenue,
+        'totalClicks': total_clicks,
+        'capturedEmails': captured_emails,
+        'conversionRate': conversion_rate
+    })
+
+# Subscriptions Endpoints
+@admin_bp.route('/subscriptions', methods=['GET'])
+@admin_required
+def get_subscriptions(current_user):
+    """Get all user subscriptions"""
+    users = User.query.filter(User.subscription_expiry.isnot(None)).all()
+    
+    subscriptions = []
+    for user in users:
+        remaining_days = 0
+        if user.subscription_expiry:
+            remaining_days = max(0, (user.subscription_expiry - datetime.utcnow()).days)
+        
+        subscriptions.append({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'plan_type': user.plan_type,
+            'subscription_start': user.created_at.isoformat() if user.created_at else None,
+            'subscription_end': user.subscription_expiry.isoformat() if user.subscription_expiry else None,
+            'remaining_days': remaining_days,
+            'status': 'active' if user.is_active and remaining_days > 0 else 'expired'
+        })
+    
+    return jsonify(subscriptions)
+
+# Security Threats Endpoints
+@admin_bp.route('/security-threats', methods=['GET'])
+@admin_required
+def get_security_threats(current_user):
+    """Get security threats and incidents"""
+    # This is a placeholder - implement based on your security monitoring system
+    threats = [
+        {
+            'id': 1,
+            'type': 'Failed Login Attempts',
+            'severity': 'medium',
+            'description': 'Multiple failed login attempts detected',
+            'ip_address': '192.168.1.100',
+            'timestamp': datetime.utcnow().isoformat(),
+            'status': 'investigating'
+        }
+    ]
+    
+    return jsonify(threats)
+
+# Support Tickets Endpoints
+@admin_bp.route('/support-tickets', methods=['GET'])
+@admin_required
+def get_support_tickets(current_user):
+    """Get all support tickets"""
+    # This is a placeholder - implement based on your support ticket system
+    tickets = [
+        {
+            'id': 1,
+            'title': 'Link not working',
+            'description': 'My shortened link is not redirecting properly',
+            'user_id': 1,
+            'username': 'john_doe',
+            'status': 'open',
+            'priority': 'medium',
+            'created_at': datetime.utcnow().isoformat(),
+            'updated_at': datetime.utcnow().isoformat()
+        }
+    ]
+    
+    return jsonify(tickets)
+
+@admin_bp.route('/support-tickets', methods=['POST'])
+@admin_required
+def create_support_ticket(current_user):
+    """Create a new support ticket"""
+    data = request.get_json()
+    
+    # This is a placeholder - implement based on your support ticket system
+    ticket = {
+        'id': 999,  # Generate proper ID
+        'title': data.get('title'),
+        'description': data.get('description'),
+        'user_id': data.get('user_id'),
+        'status': 'open',
+        'priority': data.get('priority', 'medium'),
+        'created_at': datetime.utcnow().isoformat(),
+        'updated_at': datetime.utcnow().isoformat()
+    }
+    
+    # Log action
+    log_admin_action(current_user.id, f"Created support ticket: {ticket['title']}", ticket['id'], 'support_ticket')
+    
+    return jsonify(ticket), 201
+
+# Chart Data Endpoint
+@admin_bp.route('/chart-data', methods=['GET'])
+@admin_required
+def get_chart_data(current_user):
+    """Get data for admin dashboard charts"""
+    from src.models.tracking_event import TrackingEvent
+    from datetime import datetime, timedelta
+    
+    # Generate sample chart data for the last 7 days
+    end_date = datetime.utcnow()
+    start_date = end_date - timedelta(days=6)
+    
+    chart_data = []
+    for i in range(7):
+        date = start_date + timedelta(days=i)
+        # Count actual events for this date
+        day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+        
+        clicks = TrackingEvent.query.filter(
+            TrackingEvent.timestamp >= day_start,
+            TrackingEvent.timestamp < day_end
+        ).count()
+        
+        users = User.query.filter(
+            User.created_at >= day_start,
+            User.created_at < day_end
+        ).count()
+        
+        chart_data.append({
+            'date': date.strftime('%Y-%m-%d'),
+            'users': users,
+            'clicks': clicks,
+            'conversions': clicks // 10  # Placeholder conversion calculation
+        })
+    
+    return jsonify(chart_data)
+

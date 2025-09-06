@@ -48,6 +48,9 @@ import {
   Cell
 } from 'recharts';
 import CampaignManagement from './CampaignManagement';
+import UserCreationForm from './UserCreationForm';
+import LinkCreationForm from './LinkCreationForm';
+import CampaignCreationForm from './CampaignCreationForm';
 import {
   Users,
   Target,
@@ -115,6 +118,11 @@ const AdminPanel = () => {
   const [securityThreats, setSecurityThreats] = useState([]);
 
   const [chartData, setChartData] = useState([]);
+
+  // Modal states for forms
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [showLinkForm, setShowLinkForm] = useState(false);
+  const [showCampaignForm, setShowCampaignForm] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -316,8 +324,140 @@ const AdminPanel = () => {
     });
   };
 
+  const fetchSubscriptions = async () => {
+    try {
+      const response = await fetch("/api/admin/subscriptions", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSubscriptions(data);
+      } else {
+        console.error("Failed to fetch subscriptions:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching subscriptions:", error);
+    }
+  };
+
+  const fetchSecurityThreats = async () => {
+    try {
+      const response = await fetch("/api/admin/security-threats", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSecurityThreats(data);
+      } else {
+        console.error("Failed to fetch security threats:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching security threats:", error);
+    }
+  };
+
+  const fetchChartData = async () => {
+    try {
+      const response = await fetch("/api/admin/chart-data", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setChartData(data);
+      } else {
+        console.error("Failed to fetch chart data:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching chart data:", error);
+    }
+  };
+
+  const fetchAuditLogs = async () => {
+    try {
+      const response = await fetch("/api/admin/audit-logs", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAuditLogs(data);
+      } else {
+        console.error("Failed to fetch audit logs:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+    }
+  };
+
+  // Form handlers
+  const handleUserCreated = (newUser) => {
+    setUsers(prev => [...prev, newUser]);
+    setShowUserForm(false);
+    fetchUsers(); // Refresh the list
+  };
+
+  const handleLinkCreated = (newLink) => {
+    setShowLinkForm(false);
+    // Optionally refresh links if needed
+  };
+
+  const handleCampaignCreated = (newCampaign) => {
+    setShowCampaignForm(false);
+    // Optionally refresh campaigns if needed
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchDashboardStats();
+    fetchAuditLogs();
+    fetchSubscriptions();
+    fetchSecurityThreats();
+    fetchChartData();
+  }, []);
+
   return (
     <div className="space-y-6">
+      {/* Form Modals */}
+      {showUserForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <UserCreationForm 
+              onUserCreated={handleUserCreated}
+              onCancel={() => setShowUserForm(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showLinkForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <LinkCreationForm 
+              onLinkCreated={handleLinkCreated}
+              onCancel={() => setShowLinkForm(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showCampaignForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <CampaignCreationForm 
+              onCampaignCreated={handleCampaignCreated}
+              onCancel={() => setShowCampaignForm(false)}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -629,7 +769,7 @@ const AdminPanel = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Button size="sm">
+            <Button size="sm" onClick={() => setShowUserForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add User
             </Button>
@@ -896,7 +1036,7 @@ const AdminPanel = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sampleAuditLogs.map((log) => (
+                  {auditLogs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="font-medium">{log.action}</TableCell>
                       <TableCell>{log.user}</TableCell>
@@ -966,25 +1106,5 @@ const AdminPanel = () => {
 };
 
 export default AdminPanel;
-
-
-
-  const fetchAuditLogs = async () => {
-    try {
-      const response = await fetch("/api/admin/audit-logs", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAuditLogs(data);
-      } else {
-        console.error("Failed to fetch audit logs:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error fetching audit logs:", error);
-    }
-  };
 
 

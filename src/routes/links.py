@@ -463,3 +463,15 @@ def delete_link_by_id(link_id):
         print(f"Error deleting link: {e}")
         return jsonify({"success": False, "error": "Failed to delete tracking link"}), 500
 
+
+nify({"success": False, "error": "Authentication required"}), 401
+
+    total_links = Link.query.filter_by(user_id=user.id).count()
+    total_clicks = TrackingEvent.query.filter(TrackingEvent.link_id.in_([link.id for link in Link.query.filter_by(user_id=user.id).all()])).count()
+    
+    return jsonify({
+        "total_links": total_links,
+        "total_clicks": total_clicks
+    })
+
+
