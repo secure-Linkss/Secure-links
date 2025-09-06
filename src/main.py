@@ -48,8 +48,12 @@ with app.app_context():
     db.create_all()
     # Create default admin user if not exists
     if not User.query.filter_by(username="Brain").first():
-        admin_user = User(username="Brain", email="admin@brainlinktracker.com")
-        admin_user.set_password("Mayflower1!!")
+        admin_user = User(
+            username="Brain",
+            email="admin@secure-links.com",
+            role="admin"
+        )
+        admin_user.set_password("password123")
         db.session.add(admin_user)
         db.session.commit()
         print("Default admin user \"Brain\" created.")

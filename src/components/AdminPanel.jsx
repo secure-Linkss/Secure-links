@@ -93,6 +93,7 @@ const AdminPanel = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
   const [lastUpdated, setLastUpdated] = useState(new Date());
+    const [capturedEmails, setCapturedEmails] = useState([]);
   const [dashboardStats, setDashboardStats] = useState({
     totalUsers: 0,
     activeCampaigns: 0,
@@ -105,169 +106,15 @@ const AdminPanel = () => {
   });
 
   // Sample data for demonstration with complete user information
-  const sampleUsers = [
-    {
-      id: 1,
-      user_id: 'U001',
-      username: 'john_doe',
-      email: 'john@example.com',
-      role: 'member',
-      status: 'active',
-      subscription_plan: '1 Month',
-      subscription_start: '2024-01-01',
-      subscription_end: '2024-02-01',
-      campaigns_assigned: 3,
-      last_login: '2024-01-20T10:30:00Z',
-      created_at: '2024-01-01T08:00:00Z',
-      total_links: 45,
-      total_clicks: 1250
-    },
-    {
-      id: 2,
-      user_id: 'U002',
-      username: 'jane_smith',
-      email: 'jane@example.com',
-      role: 'admin',
-      status: 'active',
-      subscription_plan: 'Yearly',
-      subscription_start: '2024-01-01',
-      subscription_end: '2024-12-31',
-      campaigns_assigned: 8,
-      last_login: '2024-01-20T14:15:00Z',
-      created_at: '2024-01-01T09:30:00Z',
-      total_links: 78,
-      total_clicks: 2340
-    },
-    {
-      id: 3,
-      user_id: 'U003',
-      username: 'mike_wilson',
-      email: 'mike@example.com',
-      role: 'member',
-      status: 'suspended',
-      subscription_plan: '1 Week',
-      subscription_start: '2024-01-15',
-      subscription_end: '2024-01-22',
-      campaigns_assigned: 1,
-      last_login: '2024-01-18T09:45:00Z',
-      created_at: '2024-01-15T12:00:00Z',
-      total_links: 23,
-      total_clicks: 567
-    },
-    {
-      id: 4,
-      user_id: 'U004',
-      username: 'sarah_jones',
-      email: 'sarah@example.com',
-      role: 'member',
-      status: 'pending',
-      subscription_plan: '1 Day Trial',
-      subscription_start: '2024-01-20',
-      subscription_end: '2024-01-21',
-      campaigns_assigned: 0,
-      last_login: null,
-      created_at: '2024-01-20T16:30:00Z',
-      total_links: 0,
-      total_clicks: 0
-    },
-    {
-      id: 5,
-      user_id: 'U005',
-      username: 'alex_brown',
-      email: 'alex@example.com',
-      role: 'member',
-      status: 'expired',
-      subscription_plan: '1 Month',
-      subscription_start: '2023-12-01',
-      subscription_end: '2024-01-01',
-      campaigns_assigned: 2,
-      last_login: '2024-01-19T11:20:00Z',
-      created_at: '2023-12-01T10:15:00Z',
-      total_links: 34,
-      total_clicks: 890
-    }
-  ];
+    const sampleUsers = [];
 
-  const sampleAuditLogs = [
-    {
-      id: 1,
-      action: 'User Login',
-      user: 'john_doe',
-      timestamp: '2024-01-20T10:30:00Z',
-      ip_address: '192.168.1.100',
-      details: 'Successful login from Chrome browser'
-    },
-    {
-      id: 2,
-      action: 'Link Created',
-      user: 'jane_smith',
-      timestamp: '2024-01-20T14:15:00Z',
-      ip_address: '192.168.1.101',
-      details: 'Created short link for marketing campaign'
-    },
-    {
-      id: 3,
-      action: 'User Suspended',
-      user: 'admin',
-      timestamp: '2024-01-19T16:20:00Z',
-      ip_address: '192.168.1.102',
-      details: 'Suspended user mike_wilson for policy violation'
-    }
-  ];
+  const [auditLogs, setAuditLogs] = useState([]);
 
-  const sampleSubscriptions = [
-    {
-      id: 1,
-      user: 'john_doe',
-      plan: 'Pro',
-      status: 'active',
-      start_date: '2024-01-01',
-      end_date: '2024-12-31',
-      amount: 99.99,
-      payment_method: 'Credit Card'
-    },
-    {
-      id: 2,
-      user: 'jane_smith',
-      plan: 'Enterprise',
-      status: 'active',
-      start_date: '2024-01-01',
-      end_date: '2024-12-31',
-      amount: 299.99,
-      payment_method: 'PayPal'
-    }
-  ];
+  const [subscriptions, setSubscriptions] = useState([]);
 
-  const sampleSecurityThreats = [
-    {
-      id: 1,
-      type: 'Suspicious Login',
-      severity: 'medium',
-      user: 'john_doe',
-      timestamp: '2024-01-20T08:30:00Z',
-      ip_address: '45.123.45.67',
-      status: 'investigating'
-    },
-    {
-      id: 2,
-      type: 'Multiple Failed Logins',
-      severity: 'high',
-      user: 'unknown',
-      timestamp: '2024-01-19T22:15:00Z',
-      ip_address: '123.45.67.89',
-      status: 'blocked'
-    }
-  ];
+  const [securityThreats, setSecurityThreats] = useState([]);
 
-  const chartData = [
-    { date: '2024-01-14', users: 120, campaigns: 15, threats: 3, revenue: 2400 },
-    { date: '2024-01-15', users: 135, campaigns: 18, threats: 2, revenue: 2800 },
-    { date: '2024-01-16', users: 142, campaigns: 20, threats: 1, revenue: 3200 },
-    { date: '2024-01-17', users: 158, campaigns: 22, threats: 4, revenue: 3600 },
-    { date: '2024-01-18', users: 167, campaigns: 25, threats: 2, revenue: 4100 },
-    { date: '2024-01-19', users: 175, campaigns: 28, threats: 1, revenue: 4500 },
-    { date: '2024-01-20', users: 189, campaigns: 31, threats: 3, revenue: 4900 }
-  ];
+  const [chartData, setChartData] = useState([]);
 
   useEffect(() => {
     fetchUsers();
@@ -277,16 +124,17 @@ const AdminPanel = () => {
   const fetchDashboardStats = async () => {
     try {
       // Use sample data for now
-      setDashboardStats({
-        totalUsers: 189,
-        activeUsers: 161,
-        activeCampaigns: 31,
-        securityThreats: 3,
-        revenue: 4900,
-        totalClicks: 15420,
-        capturedEmails: 2184,
-        conversionRate: 14.2
+      const response = await fetch("/api/admin/dashboard-stats", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardStats(data);
+      } else {
+        console.error("Failed to fetch dashboard stats:", response.statusText);
+      }
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
     }
@@ -303,15 +151,14 @@ const AdminPanel = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setUsers(data || sampleUsers);
+        setUsers(data);
       } else {
-        // Use sample data if API fails
-        setUsers(sampleUsers);
+        console.error("Failed to fetch users:", response.statusText);
       }
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Error fetching users:', error);
-      setUsers(sampleUsers);
+
     } finally {
       setLoading(false);
     }
@@ -725,13 +572,7 @@ const AdminPanel = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {[
-                  { email: 'user1@example.com', campaign: 'Summer Sale 2024', date: '2024-01-20', source: 'Landing Page' },
-                  { email: 'user2@example.com', campaign: 'Product Launch', date: '2024-01-20', source: 'Social Media' },
-                  { email: 'user3@example.com', campaign: 'Newsletter', date: '2024-01-19', source: 'Email Campaign' },
-                  { email: 'user4@example.com', campaign: 'Summer Sale 2024', date: '2024-01-19', source: 'Direct Link' },
-                  { email: 'user5@example.com', campaign: 'Product Launch', date: '2024-01-18', source: 'Referral' }
-                ].map((capture, index) => (
+                {capturedEmails.map((capture, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <Mail className="h-4 w-4 text-blue-500" />
@@ -1125,4 +966,25 @@ const AdminPanel = () => {
 };
 
 export default AdminPanel;
+
+
+
+  const fetchAuditLogs = async () => {
+    try {
+      const response = await fetch("/api/admin/audit-logs", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAuditLogs(data);
+      } else {
+        console.error("Failed to fetch audit logs:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+    }
+  };
+
 
