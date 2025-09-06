@@ -46,6 +46,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
+import CampaignManagement from './CampaignManagement';
 import {
   Users,
   Target,
@@ -827,13 +828,7 @@ const AdminPanel = () => {
         </TabsContent>
 
         <TabsContent value="campaign-management" className="space-y-6">
-          <Card className="bg-card border-border">
-            <CardContent className="p-8 text-center">
-              <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-foreground mb-2">Campaign Management</h3>
-              <p className="text-muted-foreground">Campaign management features will be implemented here.</p>
-            </CardContent>
-          </Card>
+          <CampaignManagement />
         </TabsContent>
 
                <TabsContent value="security-threats" className="space-y-6">
