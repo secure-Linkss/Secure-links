@@ -82,3 +82,6 @@ export function LinkShortener() {
 }
 
 
+
+export default LinkShortener;
+

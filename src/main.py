@@ -24,6 +24,8 @@ from src.routes.admin import admin_bp
 from src.routes.admin_settings import admin_settings_bp
 from src.routes.notifications import notifications_bp
 from src.routes.security import security_bp
+from src.routes.user_settings import user_settings_bp
+from src.routes.shorten import shorten_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), '..', 'src', 'static'))
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'ej5B3Amppi4gjpbC65te6rJuvJzgVCWW_xfB-ZLR1TE')
@@ -41,6 +43,8 @@ app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(admin_settings_bp, url_prefix='/api/settings')
 app.register_blueprint(notifications_bp, url_prefix='/api')
 app.register_blueprint(security_bp)
+app.register_blueprint(user_settings_bp, url_prefix='/api')
+app.register_blueprint(shorten_bp, url_prefix='/api')
 app.register_blueprint(track_bp)
 app.register_blueprint(events_bp)
 
