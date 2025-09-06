@@ -747,75 +747,39 @@ const AdminPanel = () => {
                             </div>
                           </TableCell>
                           
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleUserAction(user.id, 'view')}
-                                className="h-8 w-8 p-0"
-                                title="View User"
-                              >
-                                <Eye className="h-3 w-3" />
-                              </Button>
-                              
-                              {user.status === 'pending' && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleUserAction(user.id, 'approve')}
-                                  className="h-8 w-8 p-0 text-green-400 hover:text-green-300"
-                                  title="Approve User"
-                                >
-                                  <CheckCircle className="h-3 w-3" />
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Open menu</span>
                                 </Button>
-                              )}
-                              
-                              {user.status !== 'suspended' && user.role !== 'main_admin' && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleUserAction(user.id, 'suspend')}
-                                  className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
-                                  title="Suspend User"
-                                >
-                                  <Ban className="h-3 w-3" />
-                                </Button>
-                              )}
-
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                                    <MoreVertical className="h-3 w-3" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="bg-popover border-border">
-                                  <DropdownMenuItem 
-                                    className="text-foreground hover:bg-accent"
-                                    onClick={() => handleUserAction(user.id, 'extend')}
-                                  >
-                                    <Clock className="h-3 w-3 mr-2" />
-                                    Extend Subscription
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    className="text-foreground hover:bg-accent"
-                                    onClick={() => handleUserAction(user.id, 'change-password')}
-                                  >
-                                    <Lock className="h-3 w-3 mr-2" />
-                                    Change Password
-                                  </DropdownMenuItem>
-                                  {user.role !== 'main_admin' && (
-                                    <DropdownMenuItem 
-                                      className="text-red-400 hover:bg-accent"
-                                      onClick={() => handleUserAction(user.id, 'delete')}
-                                    >
-                                      <Trash2 className="h-3 w-3 mr-2" />
-                                      Delete User
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => handleViewUser(user.id)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditUser(user.id)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit User
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDeleteUser(user.id)}>
+                                  <Trash className="h-4 w-4 mr-2" />
+                                  Delete User
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleChangeUserRole(user.id)}>
+                                  <UserCheck className="h-4 w-4 mr-2" />
+                                  Change Role
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleResetUserPassword(user.id)}>
+                                  <Key className="h-4 w-4 mr-2" />
+                                  Reset Password
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       ))}
