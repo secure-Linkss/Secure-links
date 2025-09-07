@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from './ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
+import { Switch } from './ui/switch'
+import { Textarea } from './ui/textarea'
 import { 
   Plus, 
   Link as LinkIcon, 
@@ -40,11 +42,19 @@ const LinkShortener = () => {
     avgCTR: 0
   })
   const [formData, setFormData] = useState({
-    originalUrl: '',
-    customShortCode: '',
-    domain: 'vercel',
-    campaign: '',
-    expiration_period: 'never'
+    originalUrl: "",
+    customShortCode: "",
+    domain: "vercel",
+    campaign: "",
+    expiration_period: "never",
+    geo_targeting_enabled: false,
+    geo_targeting_type: "allow", // 'allow' or 'block'
+    allowed_countries: [],
+    blocked_countries: [],
+    allowed_regions: [],
+    blocked_regions: [],
+    allowed_cities: [],
+    blocked_cities: [],
   })
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError] = useState('')
@@ -128,10 +138,19 @@ const LinkShortener = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          original_url: formData.originalUrl,
+          originalUrl: formData.originalUrl,
           title: formData.campaign || 'Untitled Link',
           campaign_name: formData.campaign || 'Default Campaign',
-          short_code: formData.customShortCode || undefined
+          short_code: formData.customShortCode || undefined,
+          domain: formData.domain,
+          geo_targeting_enabled: formData.geo_targeting_enabled,
+          geo_targeting_type: formData.geo_targeting_type,
+          allowed_countries: formData.allowed_countries,
+          blocked_countries: formData.blocked_countries,
+          allowed_regions: formData.allowed_regions,
+          blocked_regions: formData.blocked_regions,
+          allowed_cities: formData.allowed_cities,
+          blocked_cities: formData.blocked_cities,
         })
       })
       
@@ -269,60 +288,153 @@ const LinkShortener = () => {
                 Create Link
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Create New Link</DialogTitle>
-                <DialogDescription>
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader className="pb-4">
+                <DialogTitle className="text-xl font-semibold">Create New Link</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
                   Create a new shortened tracking link for your campaign.
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleFormSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="originalUrl">Original URL *</Label>
-                  <Input
-                    id="originalUrl"
-                    name="originalUrl"
-                    type="url"
-                    placeholder="https://example.com"
-                    value={formData.originalUrl}
-                    onChange={handleFormChange}
-                    required
-                  />
+              <form onSubmit={handleFormSubmit} className="space-y-6">
+                {/* Basic Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="originalUrl" className="text-sm font-medium">Original URL *</Label>
+                    <Input
+                      id="originalUrl"
+                      name="originalUrl"
+                      type="url"
+                      placeholder="https://example.com"
+                      value={formData.originalUrl}
+                      onChange={handleFormChange}
+                      required
+                      className="h-9"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="campaign" className="text-sm font-medium">Campaign Name</Label>
+                    <Input
+                      id="campaign"
+                      name="campaign"
+                      placeholder="My Campaign"
+                      value={formData.campaign}
+                      onChange={handleFormChange}
+                      className="h-9"
+                    />
+                  </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="campaign">Campaign Name</Label>
-                  <Input
-                    id="campaign"
-                    name="campaign"
-                    placeholder="My Campaign"
-                    value={formData.campaign}
-                    onChange={handleFormChange}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="customShortCode" className="text-sm font-medium">Custom Short Code</Label>
+                    <Input
+                      id="customShortCode"
+                      name="customShortCode"
+                      placeholder="my-link"
+                      value={formData.customShortCode}
+                      onChange={handleFormChange}
+                      className="h-9"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="domain" className="text-sm font-medium">Domain</Label>
+                    <Select value={formData.domain} onValueChange={(value) => setFormData({...formData, domain: value})}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="vercel">Vercel Domain</SelectItem>
+                        <SelectItem value="short.io">Short.io Domain</SelectItem>
+                        <SelectItem value="custom">Custom Domain</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="customShortCode">Custom Short Code (Optional)</Label>
-                  <Input
-                    id="customShortCode"
-                    name="customShortCode"
-                    placeholder="my-link"
-                    value={formData.customShortCode}
-                    onChange={handleFormChange}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="domain">Domain</Label>
-                  <Select value={formData.domain} onValueChange={(value) => setFormData({...formData, domain: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="vercel">Vercel Domain</SelectItem>
-                      <SelectItem value="custom">Custom Domain</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                {/* Security Features */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-900">Security Features</h3>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="geo_targeting"
+                      checked={formData.geo_targeting_enabled}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, geo_targeting_enabled: checked }))}
+                    />
+                    <Label htmlFor="geo_targeting" className="text-sm">Geo Targeting</Label>
+                  </div>
+
+                  {/* Enhanced Geolocation Fields - Only show when geo targeting is enabled */}
+                  {formData.geo_targeting_enabled && (
+                    <div className="space-y-3 p-3 border rounded-lg bg-slate-50">
+                      <div className="space-y-2">
+                        <Label htmlFor="geo_targeting_type" className="text-sm font-medium">Targeting Type</Label>
+                        <Select
+                          value={formData.geo_targeting_type}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, geo_targeting_type: value }))}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Select targeting type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="allow">Allow Selected Locations</SelectItem>
+                            <SelectItem value="block">Block Selected Locations</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="countries" className="text-sm font-medium">Countries</Label>
+                          <Textarea
+                            id="countries"
+                            placeholder="Enter countries (one per line)\ne.g. United States\nCanada\nUnited Kingdom"
+                            value={formData.geo_targeting_type === 'allow' ? formData.allowed_countries.join('\n') : formData.blocked_countries.join('\n')}
+                            onChange={(e) => {
+                              const countries = e.target.value.split('\n').filter(c => c.trim());
+                              if (formData.geo_targeting_type === 'allow') {
+                                setFormData(prev => ({ ...prev, allowed_countries: countries }));
+                              } else {
+                                setFormData(prev => ({ ...prev, blocked_countries: countries }));
+                              }
+                            }}
+                            rows={3}
+                            className="text-sm"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="regions" className="text-sm font-medium">Cities/Regions</Label>
+                          <Textarea
+                            id="regions"
+                            placeholder="Enter cities or regions (one per line)\ne.g. New York\nCalifornia\nLondon"
+                            value={formData.geo_targeting_type === 'allow' ? 
+                              [...formData.allowed_regions, ...formData.allowed_cities].join('\n') : 
+                              [...formData.blocked_regions, ...formData.blocked_cities].join('\n')
+                            }
+                            onChange={(e) => {
+                              const locations = e.target.value.split('\n').filter(l => l.trim());
+                              if (formData.geo_targeting_type === 'allow') {
+                                setFormData(prev => ({ 
+                                  ...prev, 
+                                  allowed_regions: locations,
+                                  allowed_cities: locations 
+                                }));
+                              } else {
+                                setFormData(prev => ({ 
+                                  ...prev, 
+                                  blocked_regions: locations,
+                                  blocked_cities: locations 
+                                }));
+                              }
+                            }}
+                            rows={4}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {formError && (

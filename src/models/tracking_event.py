@@ -2,8 +2,10 @@ from .user import db
 from datetime import datetime
 
 class TrackingEvent(db.Model):
+    __tablename__ = 'tracking_events'
+    
     id = db.Column(db.Integer, primary_key=True)
-    link_id = db.Column(db.Integer, db.ForeignKey("link.id"), nullable=False)
+    link_id = db.Column(db.Integer, db.ForeignKey("links.id"), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     ip_address = db.Column(db.String(45))
     user_agent = db.Column(db.Text)

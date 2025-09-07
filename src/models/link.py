@@ -1,9 +1,11 @@
-from .user import db
+from src.models import db
 import uuid
 
 class Link(db.Model):
+    __tablename__ = 'links'
+    
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     target_url = db.Column(db.String(500), nullable=False)
     short_code = db.Column(db.String(10), unique=True, nullable=False)
     campaign_name = db.Column(db.String(255), default="Untitled Campaign")

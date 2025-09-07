@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date
 import jwt
 import os
+import uuid
 
 db = SQLAlchemy()
 
@@ -18,7 +19,8 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # New fields for roles and tracking
-    role = db.Column(db.String(20), default='member')  # member, admin, assistant_admin
+    role = db.Column(db.String(20), default='member')  # member, admin, main_admin
+    status = db.Column(db.String(20), default='pending')  # active, pending, suspended, expired
     last_login = db.Column(db.DateTime)
     last_ip = db.Column(db.String(45))
     login_count = db.Column(db.Integer, default=0)
@@ -29,6 +31,9 @@ class User(db.Model):
 
     # Subscription and usage
     plan_type = db.Column(db.String(20), default='free')  # free, pro, enterprise
+    subscription_plan = db.Column(db.String(50), default='Free Plan')
+    subscription_start = db.Column(db.DateTime, default=datetime.utcnow)
+    subscription_end = db.Column(db.DateTime, nullable=True)
     subscription_expiry = db.Column(db.DateTime, nullable=True)  # Subscription expiry date
     daily_link_limit = db.Column(db.Integer, default=10)
     links_used_today = db.Column(db.Integer, default=0)
@@ -49,7 +54,7 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def is_admin(self):
-        return self.role in ['admin', 'assistant_admin']
+        return self.role in ['admin', 'main_admin']
 
     def can_create_link(self):
         if self.plan_type == 'pro' or self.plan_type == 'enterprise':
@@ -95,9 +100,13 @@ class User(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'role': self.role,
+            'status': self.status,
             'is_active': self.is_active,
             'is_verified': self.is_verified,
             'plan_type': self.plan_type,
+            'subscription_plan': self.subscription_plan,
+            'subscription_start': self.subscription_start.isoformat() if self.subscription_start else None,
+            'subscription_end': self.subscription_end.isoformat() if self.subscription_end else None,
             'subscription_expiry': self.subscription_expiry.isoformat() if self.subscription_expiry else None,
             'daily_link_limit': self.daily_link_limit,
             'links_used_today': self.links_used_today,
@@ -112,5 +121,4 @@ class User(db.Model):
                 'account_locked_until': self.account_locked_until.isoformat() if self.account_locked_until else None,
             })
         return data
-
 

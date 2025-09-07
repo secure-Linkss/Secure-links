@@ -2,6 +2,11 @@
   "version": 2,
   "builds": [
     {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "outputDirectory": "dist" }
+    },
+    {
       "src": "api/index.py",
       "use": "@vercel/python"
     }
@@ -29,7 +34,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "dist/$1"
     }
   ],
   "env": {

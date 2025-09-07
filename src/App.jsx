@@ -75,6 +75,7 @@ function App() {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/link-shortener" element={<LinkShortener />} />
                 <Route path="/notifications" element={<NotificationSystem />} />
+
                 {user && (user.role === "admin" || user.role === "main_admin") && (
                   <Route path="/admin-panel" element={<AdminPanel />} />
                 )}

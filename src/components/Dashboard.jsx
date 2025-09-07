@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
 import { CalendarDays, Link, MousePointer, Users, BarChart as BarChartIcon, Globe, Shield, TrendingUp, Eye, Mail } from 'lucide-react';
 
 const Dashboard = () => {
@@ -117,8 +117,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Compact Metric Cards - 7 cards in one row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      {/* Compact Metric Cards - 8 cards in one row */}
+      <div className="grid grid-cols-8 gap-3">
         <Card className="hover:shadow-sm transition-shadow cursor-pointer border-l-4 border-l-blue-500">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
@@ -159,10 +159,22 @@ const Dashboard = () => {
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">Emails Captured</p>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Captured Emails</p>
                 <p className="text-xl font-bold">{additionalStats.capturedEmails}</p>
               </div>
               <Mail className="h-4 w-4 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-sm transition-shadow cursor-pointer border-l-4 border-l-emerald-500">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Active Links</p>
+                <p className="text-xl font-bold">{additionalStats.activeLinks}</p>
+              </div>
+              <Eye className="h-4 w-4 text-emerald-500" />
             </div>
           </CardContent>
         </Card>
@@ -205,134 +217,189 @@ const Dashboard = () => {
       </div>
 
       {/* Charts in 2-Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-6">
         {/* Performance Over Time Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChartIcon className="h-5 w-5" />
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                <BarChartIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
               Performance Over Time
             </CardTitle>
+            <p className="text-sm text-muted-foreground">Clicks, visitors, and email captures</p>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={performanceData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="clicks" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="visitors" stroke="#10b981" strokeWidth={2} />
-                <Line type="monotone" dataKey="emails" stroke="#f59e0b" strokeWidth={2} />
-              </LineChart>
+          <CardContent className="pt-0">
+            <ResponsiveContainer width="100%" height={320}>
+                <AreaChart data={performanceData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="colorVisitors" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="colorEmails" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.5} />
+                <XAxis 
+                  dataKey="date" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#64748b' }}
+                />
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#64748b' }}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Legend />
+                <Area type="monotone" dataKey="clicks" stroke="#3b82f6" fillOpacity={1} fill="url(#colorClicks)" strokeWidth={3} />
+                <Area type="monotone" dataKey="visitors" stroke="#10b981" fillOpacity={1} fill="url(#colorVisitors)" strokeWidth={3} />
+                <Area type="monotone" dataKey="emails" stroke="#f59e0b" fillOpacity={1} fill="url(#colorEmails)" strokeWidth={3} />
+              </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         {/* Device Breakdown Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <div className="p-2 bg-emerald-100 dark:bg-emerald-900 rounded-lg">
+                <Eye className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
               Device Breakdown
             </CardTitle>
+            <p className="text-sm text-muted-foreground">Traffic distribution by device type</p>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+          <CardContent className="pt-0">
+            <ResponsiveContainer width="100%" height={320}>
               <PieChart>
+                <defs>
+                  <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feDropShadow dx="2" dy="2" stdDeviation="3" floodOpacity="0.3"/>
+                  </filter>
+                </defs>
                 <Pie
                   data={deviceData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percentage }) => `${name} ${percentage}%`}
-                  outerRadius={80}
+                  label={({ name, percentage }) => `${name}\n${percentage}%`}
+                  outerRadius={100}
+                  innerRadius={40}
                   fill="#8884d8"
                   dataKey="value"
+                  filter="url(#shadow)"
                 >
                   {deviceData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  iconType="circle"
+                />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Additional Charts in 2-Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Click Trends Chart */}
+      {/* Bottom Section - 3 Cards in a Row */}
+      <div className="grid grid-cols-3 gap-6">
+        {/* Top Countries */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Click Trends
-            </CardTitle>
+            <CardTitle className="text-sm">Top Countries</CardTitle>
+            <p className="text-xs text-muted-foreground">Geographic distribution</p>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={performanceData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="clicks" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Conversion Funnel Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChartIcon className="h-5 w-5" />
-              Conversion Funnel
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={[
-                { name: 'Clicks', value: stats.totalClicks, color: '#3b82f6' },
-                { name: 'Visitors', value: additionalStats.realVisitors, color: '#10b981' },
-                { name: 'Emails', value: additionalStats.capturedEmails, color: '#f59e0b' }
-              ]}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Captured Emails List */}
-      {capturedEmails.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Recently Captured Emails
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {capturedEmails.slice(0, 10).map((email, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <span className="text-sm">{email.email}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(email.captured_at).toLocaleDateString()}
-                  </span>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-3 bg-blue-500 rounded-sm"></div>
+                  <span className="text-sm">United States</span>
                 </div>
-              ))}
+                <div className="text-right">
+                  <div className="text-sm font-medium">50%</div>
+                  <div className="text-xs text-muted-foreground">2 clicks • 0 emails</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-3 bg-green-500 rounded-sm"></div>
+                  <span className="text-sm">Unknown</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-medium">50%</div>
+                  <div className="text-xs text-muted-foreground">2 clicks • 0 emails</div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
-      )}
+
+        {/* Campaign Performance */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Campaign Performance</CardTitle>
+            <p className="text-xs text-muted-foreground">Top performing campaigns</p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="p-3 bg-gray-50 rounded">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium">Test Campaign</span>
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">active</span>
+                </div>
+                <div className="text-xs text-muted-foreground">ID: puWfWWV9</div>
+                <div className="flex justify-between mt-2">
+                  <span className="text-xs">4 clicks</span>
+                  <span className="text-xs">0 emails</span>
+                </div>
+                <div className="text-xs text-muted-foreground">0% conversion</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Captures */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Recent Captures</CardTitle>
+            <p className="text-xs text-muted-foreground">Latest email captures</p>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center text-muted-foreground text-sm py-8">
+              No recent captures
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

