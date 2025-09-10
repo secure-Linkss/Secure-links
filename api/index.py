@@ -17,7 +17,8 @@ from src.routes.notifications import notifications_bp
 def create_app():
     app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), '..', 'dist'))
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "ej5B3Amppi4gjpbC65te6rJuvJzgVCWW_xfB-ZLR1TE")
-    app.config["SHORT_IO_DOMAIN"] = os.environ.get("SHORT_IO_DOMAIN", "")
+    app.config["SHORT_IO_DOMAIN"] = os.environ.get("SHORTIO_DOMAIN", "Secure-links.short.gy")
+    app.config["SHORT_IO_API_KEY"] = os.environ.get("SHORTIO_API_KEY", "sk_DbGGlUHPN7Z9VotL")
 
     # Enable CORS for all routes
     CORS(app, supports_credentials=True)

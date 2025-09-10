@@ -27,7 +27,7 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'https://secure-links-7n8rlib54-secure-links-projects-3ddb7f78.vercel.app',
         changeOrigin: true,
         secure: false
       }
